@@ -336,6 +336,7 @@ fn compute_desired(app: &AppHandle, icon_state: TrayIconState) -> TrayDesired {
         .map(|m| (m.id, m.name))
         .collect();
     downloaded_models.sort_by(|a, b| a.1.cmp(&b.1));
+    let update_checks_enabled = crate::settings::update_checks_effectively_enabled(&settings);
 
     TrayDesired {
         icon_path: get_icon_path(theme, icon_state, warning),
@@ -347,7 +348,7 @@ fn compute_desired(app: &AppHandle, icon_state: TrayIconState) -> TrayDesired {
             selected_model: settings.selected_model,
             downloaded_models,
             locale: settings.app_language,
-            update_checks_enabled: settings.update_checks_enabled,
+            update_checks_enabled,
             transform_style: settings.transform_style,
         },
     }
