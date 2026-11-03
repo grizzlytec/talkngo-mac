@@ -186,11 +186,15 @@ pub fn plan(
                     ..*model
                 };
                 match auto_language(&unrestricted, preferred, labels) {
+                    // When detection can't decide (very short clip, detector
+                    // missing or failed), use their first language rather than
+                    // the model's own detection, which can pick a language
+                    // they don't speak (e.g. "test" → Russian "Тест").
                     AutoLanguage::Detect { languages, allowed } => {
                         return Plan::Detect {
                             languages,
                             allowed,
-                            fallback: DetectFallback::Native,
+                            fallback: DetectFallback::FirstLanguage,
                         };
                     }
                     // Limited to one language, Auto is that language.
@@ -386,7 +390,7 @@ mod tests {
     fn native_detection_is_kept_unless_always_and_not_streaming() {
         let languages = codes("en de");
         let whisper = model(&languages, true, false);
-        let always = detect("en de", "en de", Native);
+        let always = detect("en de", "en de", FirstLanguage);
         assert_eq!(plan_on(&whisper, "auto", "en de", WhenNeeded), Plan::Native);
         assert_eq!(plan_on(&whisper, "auto", "en de", Always), always);
         assert_eq!(plan_on(&whisper, "auto", "en", WhenNeeded), Plan::Native);
