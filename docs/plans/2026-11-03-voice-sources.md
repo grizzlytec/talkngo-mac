@@ -244,3 +244,10 @@ Matches mockup `docs/mockups/2026-11-03-voice-sources.html` (three options; no G
 - "Open voice guide" opens .md in the default app (Notion on Grizzly's Mac): proposed always opening in TextEdit — waiting on Grizzly.
 - Rewrite dropped when the frontmost app changes mid-rewrite: proposed copying the result to the clipboard instead.
 - Parked: RFC 8707 `resource` param / path-aware discovery for third-party servers; code replay creating an extra voice_clients row; revoke end-to-end not run live (covered by Kodiak tests).
+
+## Where we are (handoff 2026-11-03 11:23)
+
+- Done: Kodiak voice scope live (KODIAK main 010dc4c); TalknGo v0.10.0 released (b4bb70e, docs 51c0850) and installed here, connected to Kodiak (guide v4, 10 words); this Mac rewrites with qwen2.5:14b.
+- In progress: nothing; worktrees and feature branches removed.
+- Next step on the other Mac: download v0.10.0 from Releases, install, grant Accessibility, `ollama pull qwen2.5:14b` and pick it in Settings → Transform, then Transform → MCP server → `https://kodiak.grizzlytec.com/mcp` → Connect → Kodiak passphrase (Coolify `KODIAK_MCP_OWNER_PASSPHRASE`).
+- Open questions: "Open voice guide" always in TextEdit? Copy rewrite to clipboard when the window changes mid-rewrite?
