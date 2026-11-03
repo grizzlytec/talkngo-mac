@@ -962,6 +962,46 @@
         "chooseFailed": "Could not use that file: {{error}}",
         "title": "Voice guide",
         "fileDescription": "Pick a .txt or .md file, e.g. in your Google Drive folder."
+      },
+      "voiceSource": {
+        "title": "My voice guide — source",
+        "options": {
+          "mcp": {
+            "name": "MCP server",
+            "description": "Your own MCP connection"
+          },
+          "file": {
+            "name": "File",
+            "description": "A .md or .txt on this computer"
+          },
+          "builtIn": {
+            "name": "Write it here",
+            "description": "Built-in guide"
+          }
+        },
+        "serverAddress": "Server address",
+        "addressPlaceholder": "Paste your MCP server address",
+        "connect": "Connect",
+        "disconnect": "Disconnect",
+        "syncNow": "Sync now",
+        "waitingForBrowser": "Waiting for sign-in in your browser…",
+        "hint": "Your browser opens to sign in. TalknGo keeps the access in your Mac's keychain — nothing to copy between Macs.",
+        "connectedTo": "Connected to {{name}}",
+        "guideLine": "Voice guide v{{version}} · updated {{time}}",
+        "signInAgain": "Sign in again",
+        "notSynced": "Not synced yet",
+        "never": "never",
+        "justNow": "just now",
+        "minutesAgo": "{{count}} min ago",
+        "hoursAgo": "{{count}} h ago",
+        "guideTool": "Voice guide tool",
+        "wordsTool": "Words tool",
+        "noTool": "None",
+        "toolPickerHint": "This server uses other tool names. Pick the ones to use.",
+        "guideFile": "Voice guide file",
+        "wordsFile": "Words file (optional)",
+        "noFile": "No file chosen",
+        "clear": "Clear"
       }
     }
   },

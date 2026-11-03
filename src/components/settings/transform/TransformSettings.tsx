@@ -10,6 +10,7 @@ import { Radio } from "../../ui/Radio";
 import { Button } from "../../ui/Button";
 import { Input } from "../../ui/Input";
 import { ShortcutInput } from "../ShortcutInput";
+import { VoiceSourceSettings } from "./VoiceSourceSettings";
 
 const STYLES: TransformStyle[] = [
   "correct_grammar",
@@ -88,31 +89,6 @@ export const TransformSettings: React.FC = () => {
     };
   }, [engineSetting, savedModel]);
 
-  const guidePath = (getSetting("voice_guide_path") ?? null) as string | null;
-  const guideName = guidePath
-    ? (guidePath.split(/[\\/]/).pop() ?? guidePath)
-    : t("settings.transform.voiceGuide.usingDefault");
-
-  const chooseGuide = async () => {
-    const picked = await open({
-      multiple: false,
-      directory: false,
-      filters: [{ name: "Text", extensions: ["md", "txt", "markdown"] }],
-    });
-    if (typeof picked !== "string") return;
-    const result = await commands.changeTransformVoiceGuidePathSetting(picked);
-    if (result.status === "error") {
-      setSyncMessage(
-        t("settings.transform.voiceGuide.chooseFailed", {
-          error: result.error,
-        }),
-      );
-      window.setTimeout(() => setSyncMessage(null), 6000);
-      return;
-    }
-    await updateSetting("voice_guide_path", picked);
-  };
-
   useEffect(() => {
     commands
       .voiceSyncConfigured()
@@ -143,6 +119,9 @@ export const TransformSettings: React.FC = () => {
     setSyncing(false);
     window.setTimeout(() => setSyncMessage(null), 4000);
   };
+
+  // Legacy users (no source chosen yet) keep their sync button.
+  const legacy = getSetting("voice_source") == null;
 
   const selected = (getSetting("transform_style") ??
     "correct_grammar") as TransformStyle;
@@ -249,19 +228,19 @@ export const TransformSettings: React.FC = () => {
             );
           })}
         </div>
-        <SettingContainer
-          title={t("settings.transform.voiceGuide.title")}
-          description={t("settings.transform.voiceGuide.description")}
-          descriptionMode="inline"
-          grouped={true}
-        >
-          <div className="flex items-center gap-2">
-            {syncMessage && (
-              <span className="text-sm text-ink-3" role="status">
-                {syncMessage}
-              </span>
-            )}
-            {syncConfigured && (
+        {legacy && syncConfigured && (
+          <SettingContainer
+            title={t("settings.transform.voiceGuide.title")}
+            description={t("settings.transform.voiceGuide.description")}
+            descriptionMode="inline"
+            grouped={true}
+          >
+            <div className="flex items-center gap-2">
+              {syncMessage && (
+                <span className="text-sm text-ink-3" role="status">
+                  {syncMessage}
+                </span>
+              )}
               <Button
                 type="button"
                 variant="secondary"
@@ -271,45 +250,11 @@ export const TransformSettings: React.FC = () => {
               >
                 {t("settings.transform.voiceGuide.sync")}
               </Button>
-            )}
-            <Button
-              type="button"
-              variant="secondary"
-              size="sm"
-              onClick={() => commands.openVoiceGuide()}
-            >
-              {t("settings.transform.voiceGuide.button")}
-            </Button>
-          </div>
-        </SettingContainer>
-        <SettingContainer
-          title={guideName}
-          description={t("settings.transform.voiceGuide.fileDescription")}
-          descriptionMode="inline"
-          grouped={true}
-        >
-          <div className="flex items-center gap-2">
-            <Button
-              type="button"
-              variant="secondary"
-              size="sm"
-              onClick={chooseGuide}
-            >
-              {t("settings.transform.voiceGuide.choose")}
-            </Button>
-            {guidePath && (
-              <Button
-                type="button"
-                variant="secondary"
-                size="sm"
-                onClick={() => updateSetting("voice_guide_path", null)}
-              >
-                {t("settings.transform.voiceGuide.useDefault")}
-              </Button>
-            )}
-          </div>
-        </SettingContainer>
+            </div>
+          </SettingContainer>
+        )}
       </SettingsGroup>
+      <VoiceSourceSettings />
     </div>
   );
 };

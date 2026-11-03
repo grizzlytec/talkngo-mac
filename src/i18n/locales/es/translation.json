@@ -962,6 +962,46 @@
         "chooseFailed": "No se pudo usar ese archivo: {{error}}",
         "title": "Guía de voz",
         "fileDescription": "Elige un archivo .txt o .md, p. ej. en tu carpeta de Google Drive."
+      },
+      "voiceSource": {
+        "title": "Guía de mi voz — fuente",
+        "options": {
+          "mcp": {
+            "name": "Servidor MCP",
+            "description": "Tu propia conexión MCP"
+          },
+          "file": {
+            "name": "Archivo",
+            "description": "Un .md o .txt en esta computadora"
+          },
+          "builtIn": {
+            "name": "Escribirla aquí",
+            "description": "Guía integrada"
+          }
+        },
+        "serverAddress": "Dirección del servidor",
+        "addressPlaceholder": "Pega la dirección de tu servidor MCP",
+        "connect": "Conectar",
+        "disconnect": "Desconectar",
+        "syncNow": "Sincronizar ahora",
+        "waitingForBrowser": "Esperando el inicio de sesión en tu navegador…",
+        "hint": "Se abre tu navegador para iniciar sesión. TalknGo guarda el acceso en el llavero de tu Mac — no hay nada que copiar entre Macs.",
+        "connectedTo": "Conectado a {{name}}",
+        "guideLine": "Guía de voz v{{version}} · actualizada {{time}}",
+        "signInAgain": "Inicia sesión de nuevo",
+        "notSynced": "Aún sin sincronizar",
+        "never": "nunca",
+        "justNow": "justo ahora",
+        "minutesAgo": "hace {{count}} min",
+        "hoursAgo": "hace {{count}} h",
+        "guideTool": "Herramienta de la guía de voz",
+        "wordsTool": "Herramienta de palabras",
+        "noTool": "Ninguna",
+        "toolPickerHint": "Este servidor usa otros nombres de herramienta. Elige cuáles usar.",
+        "guideFile": "Archivo de la guía de voz",
+        "wordsFile": "Archivo de palabras (opcional)",
+        "noFile": "Ningún archivo elegido",
+        "clear": "Quitar"
       }
     }
   },
