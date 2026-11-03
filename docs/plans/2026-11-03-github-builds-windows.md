@@ -39,3 +39,12 @@ only when Grizzly asks. Pushing to main must never start a build.
 - [ ] Windows key storage.
 - [ ] Release run → draft.
 - [ ] Grizzly: test on a Windows PC, then publish the draft.
+
+## Decision 2026-11-03 (Grizzly: "Sí")
+
+- Transform selection (rewrite) is macOS Apple Silicon only (`transform.rs` `platform` module, Cmd+C copy).
+  Windows 0.11.0 ships with dictation only; release notes say rewrite on Windows is coming. Porting it
+  (Ctrl+C copy, Windows clipboard snapshot) is a separate piece, tested on a real Windows PC.
+- Grizzly approved publishing 0.11.0 with both downloads once the draft has the Mac and Windows files.
+
+Release run: https://github.com/grizzlytec/talkngo-mac/actions/runs/41734735750
