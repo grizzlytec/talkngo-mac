@@ -622,6 +622,11 @@
         "title": "Füllwörter entfernen",
         "description": "Entfernt häufige Verzögerungslaute aus Transkriptionen. Deaktivieren Sie diese Option, um sie beizubehalten."
       },
+      "claudeDictationCleanup": {
+        "title": "Clean up with Claude",
+        "description": "Also removes \"este\", \"o sea\", \"bueno\" used as filler, and ideas you said twice. Keeps your words and order. Uses the internet, adds about 1 second. ≈ $0.06 per 1,000 dictations.",
+        "noKey": "Add your Claude key in Transform first."
+      },
       "chineseScript": {
         "title": "Chinesische Schrift",
         "description": "Schreibt Transkriptionen auf Mandarin und Kantonesisch in vereinfachten Schriftzeichen oder in traditionellen Schriftzeichen, wie sie in Taiwan oder Hongkong geschrieben werden. Andere Sprachen bleiben unverändert.",

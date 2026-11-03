@@ -622,6 +622,11 @@
         "title": "Opvulwoorden verwijderen",
         "description": "Verwijdert veelvoorkomende aarzelwoorden uit transcripties. Schakel dit uit om ze te behouden."
       },
+      "claudeDictationCleanup": {
+        "title": "Clean up with Claude",
+        "description": "Also removes \"este\", \"o sea\", \"bueno\" used as filler, and ideas you said twice. Keeps your words and order. Uses the internet, adds about 1 second. ≈ $0.06 per 1,000 dictations.",
+        "noKey": "Add your Claude key in Transform first."
+      },
       "chineseScript": {
         "title": "Chinees schrift",
         "description": "Schrijft Mandarijnse en Kantonese transcripties in vereenvoudigde tekens, of in traditionele tekens zoals gebruikt in Taiwan of Hongkong. Andere talen blijven ongewijzigd.",

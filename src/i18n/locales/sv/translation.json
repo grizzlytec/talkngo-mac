@@ -622,6 +622,11 @@
         "title": "Ta bort utfyllnadsord",
         "description": "Tar bort vanliga tvekljud från transkriberingar. Stäng av för att behålla dem."
       },
+      "claudeDictationCleanup": {
+        "title": "Clean up with Claude",
+        "description": "Also removes \"este\", \"o sea\", \"bueno\" used as filler, and ideas you said twice. Keeps your words and order. Uses the internet, adds about 1 second. ≈ $0.06 per 1,000 dictations.",
+        "noKey": "Add your Claude key in Transform first."
+      },
       "chineseScript": {
         "title": "Kinesisk skrift",
         "description": "Skriver mandarin- och kantonesiska transkriptioner med förenklade tecken, eller med traditionella tecken som de skrivs i Taiwan eller Hongkong. Andra språk lämnas oförändrade.",

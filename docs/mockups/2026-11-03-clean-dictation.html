@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>TalknGo — Clean up dictation with Claude (mockup)</title>
+<style>
+  :root { --text:#0f0f0f; --bg:#fbfbfb; --green:#00e85a; --line:#e4e4e1; --muted:#6b6b66; --wash:#eafff1; }
+  body { margin:0; background:#ecece8; font:14px/1.45 -apple-system,system-ui,sans-serif; color:var(--text); padding:32px; }
+  h1 { font:600 22px ui-rounded,system-ui; margin:0 0 4px; }
+  .lead { color:var(--muted); margin:0 0 24px; }
+  .row { display:flex; gap:28px; flex-wrap:wrap; align-items:flex-start; }
+  .shot { width:600px; }
+  .cap { font-weight:600; margin:0 0 8px; }
+  .gl { font-size:12px; letter-spacing:.06em; text-transform:uppercase; color:var(--muted); margin:0 0 8px 4px; }
+  .group { background:#fff; border:1px solid var(--line); border-radius:12px; overflow:hidden; }
+  .item { display:flex; justify-content:space-between; align-items:center; gap:20px; padding:14px 16px; border-top:1px solid var(--line); }
+  .item:first-child { border-top:none; }
+  .item b { display:block; font-weight:500; }
+  .item span { color:var(--muted); }
+  .new { background:var(--wash); }
+  .tog { width:38px; height:22px; border-radius:11px; background:#d6d6d1; position:relative; flex:none; }
+  .tog::after { content:""; position:absolute; top:2px; left:2px; width:18px; height:18px; border-radius:50%; background:#fff; box-shadow:0 1px 2px rgba(0,0,0,.2); }
+  .tog.on { background:var(--green); } .tog.on::after { left:18px; }
+  .note { font-size:12px; color:#b4231a; margin-top:4px; }
+  .ex { background:#fff; border:1px solid var(--line); border-radius:12px; padding:14px 16px; }
+  .ex p { margin:4px 0 12px; }
+  .lbl { font-size:12px; color:var(--muted); text-transform:uppercase; letter-spacing:.06em; }
+  s { color:#b4231a; }
+</style>
+</head>
+<body>
+<h1>Clean up dictation with Claude</h1>
+<p class="lead">Settings → General → Transcription. New row (green) under "Remove filler words". Off by default.</p>
+<div class="row">
+  <div class="shot">
+    <p class="cap">1 · Settings, Claude key already saved (in Transform)</p>
+    <p class="gl">Transcription</p>
+    <div class="group">
+      <div class="item"><div><b>Remove filler words</b><span>Removes sounds like "uh", "ehm", "mmm".</span></div><div class="tog on"></div></div>
+      <div class="item new"><div><b>Clean up with Claude</b><span>Also removes "este", "o sea", "bueno" used as filler, and ideas you said twice. Keeps your words and order. Uses the internet, adds about 1 second. ≈ $0.10 per 1,000 dictations.</span></div><div class="tog on"></div></div>
+    </div>
+    <p class="cap" style="margin-top:22px">2 · No Claude key yet</p>
+    <div class="group">
+      <div class="item new"><div><b>Clean up with Claude</b><span>Also removes "este", "o sea", "bueno" used as filler, and ideas you said twice.</span><div class="note">Add your Claude key in Transform first.</div></div><div class="tog"></div></div>
+    </div>
+  </div>
+  <div class="shot">
+    <p class="cap">3 · What it does (example)</p>
+    <div class="ex">
+      <div class="lbl">You say</div>
+      <p>Este… o sea, mañana <s>pues</s> mañana paso a revisar el panel, <s>bueno, lo que te decía, mañana paso a revisar el panel</s> y te mando el precio.</p>
+      <div class="lbl">Pasted today</div>
+      <p>Este… o sea, mañana pues mañana paso a revisar el panel, bueno, lo que te decía, mañana paso a revisar el panel y te mando el precio.</p>
+      <div class="lbl">Pasted with "Clean up with Claude"</div>
+      <p>Mañana paso a revisar el panel y te mando el precio.</p>
+      <div class="lbl">No internet</div>
+      <p style="margin-bottom:0">Pastes the text as today (fillers like "ehm" still removed). Nothing is lost.</p>
+    </div>
+  </div>
+</div>
+</body>
+</html>

@@ -84,7 +84,7 @@ pub const VOICE_GUIDE_FILE: &str = "voice_guide.md";
 /// Claude models offered for rewriting.
 pub const CLAUDE_MODELS: [&str; 2] = ["claude-haiku-5-5", "claude-sonnet-5-5"];
 pub const DEFAULT_CLAUDE_MODEL: &str = "claude-haiku-5-5";
-const ANTHROPIC_BASE_URL: &str = "https://api.anthropic.com/v1";
+pub(crate) const ANTHROPIC_BASE_URL: &str = "https://api.anthropic.com/v1";
 const CLAUDE_CHAT_TIMEOUT: Duration = Duration::from_secs(15);
 const CLAUDE_STATUS_TIMEOUT: Duration = Duration::from_secs(5);
 /// How long the "couldn't rewrite" notice stays on screen.
@@ -793,6 +793,11 @@ mod key_store {
     pub fn remove() -> Result<(), String> {
         Ok(())
     }
+}
+
+/// The saved Claude API key, if any. Storage errors read as "no key".
+pub(crate) fn saved_claude_key() -> Option<String> {
+    key_store::get().ok().flatten()
 }
 
 /// Last four characters of `key`, or None when it is too short to show safely.

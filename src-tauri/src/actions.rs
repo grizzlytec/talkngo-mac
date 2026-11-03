@@ -417,6 +417,10 @@ pub(crate) async fn process_transcription_output(
     let mut post_processed_text: Option<String> = None;
     let mut post_process_prompt: Option<String> = None;
 
+    // Optional Claude cleanup runs right after the local cleanup (already applied
+    // to `transcription`); any failure keeps the local text.
+    final_text = crate::dictation_cleanup::cleanup_dictation(&settings, final_text).await;
+
     if post_process {
         if let Some(processed_text) = post_process_transcription(&settings, &final_text).await {
             post_processed_text = Some(processed_text.clone());

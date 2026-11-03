@@ -622,6 +622,11 @@
         "title": "Hapus Kata Pengisi",
         "description": "Menghapus kata pengisi umum dari transkripsi. Nonaktifkan untuk mempertahankannya."
       },
+      "claudeDictationCleanup": {
+        "title": "Clean up with Claude",
+        "description": "Also removes \"este\", \"o sea\", \"bueno\" used as filler, and ideas you said twice. Keeps your words and order. Uses the internet, adds about 1 second. ≈ $0.06 per 1,000 dictations.",
+        "noKey": "Add your Claude key in Transform first."
+      },
       "chineseScript": {
         "title": "Aksara Tionghoa",
         "description": "Menulis transkripsi Mandarin dan Kanton dengan aksara Sederhana, atau aksara Tradisional seperti yang ditulis di Taiwan atau Hong Kong. Bahasa lain tidak diubah.",

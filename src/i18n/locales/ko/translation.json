@@ -622,6 +622,11 @@
         "title": "군더더기 표현 제거",
         "description": "전사에서 흔한 머뭇거림 표현을 제거합니다. 그대로 두려면 이 옵션을 끄세요."
       },
+      "claudeDictationCleanup": {
+        "title": "Clean up with Claude",
+        "description": "Also removes \"este\", \"o sea\", \"bueno\" used as filler, and ideas you said twice. Keeps your words and order. Uses the internet, adds about 1 second. ≈ $0.06 per 1,000 dictations.",
+        "noKey": "Add your Claude key in Transform first."
+      },
       "chineseScript": {
         "title": "중국어 간체/번체",
         "description": "표준 중국어와 광둥어 전사를 간체 또는 대만·홍콩식 번체로 표기합니다. 다른 언어는 변경되지 않습니다.",

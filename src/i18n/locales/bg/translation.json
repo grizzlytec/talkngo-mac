@@ -622,6 +622,11 @@
         "title": "Премахване на думи паразити",
         "description": "Премахва често срещаните думи за колебание от транскрипциите. Изключете, за да ги запазите."
       },
+      "claudeDictationCleanup": {
+        "title": "Clean up with Claude",
+        "description": "Also removes \"este\", \"o sea\", \"bueno\" used as filler, and ideas you said twice. Keeps your words and order. Uses the internet, adds about 1 second. ≈ $0.06 per 1,000 dictations.",
+        "noKey": "Add your Claude key in Transform first."
+      },
       "chineseScript": {
         "title": "Китайска писменост",
         "description": "Записва транскрипциите на мандарин и кантонски с опростени йероглифи или с традиционни йероглифи, както се пишат в Тайван или Хонконг. Другите езици остават непроменени.",

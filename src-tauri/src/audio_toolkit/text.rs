@@ -319,6 +319,9 @@ fn gated_filler_words_for_language(lang: &str) -> &'static [&'static str] {
         "en" => &["um", "ah", "eh"],
         "de" => &["äh", "ähm"],
         "fr" => &["euh"],
+        // Sounds only. Real words that are often filler ("este", "pues", "bueno")
+        // are left to the optional Claude cleanup.
+        "es" => &["eh", "eeh", "em", "emm"],
         _ => &[],
     }
 }
@@ -358,6 +361,64 @@ fn collapse_stutters(text: &str) -> String {
         } else {
             result.push(word);
             i += 1;
+        }
+    }
+
+    result.join(" ")
+}
+
+/// Comparison key for repeated-phrase detection: lowercase, letters and digits only.
+fn phrase_key(word: &str) -> String {
+    word.chars()
+        .filter(|c| c.is_alphanumeric())
+        .flat_map(|c| c.to_lowercase())
+        .collect()
+}
+
+/// Collapses a phrase of 2+ words that is immediately repeated, keeping the
+/// first occurrence ("mañana paso mañana paso" -> "mañana paso"). Comparison
+/// ignores case and punctuation. A single word said twice is left alone ("no no"),
+/// as are repeats separated by other words.
+fn collapse_repeated_phrases(text: &str) -> String {
+    let words: Vec<&str> = text.split_whitespace().collect();
+    if words.len() < 4 {
+        return text.to_string();
+    }
+    let keys: Vec<String> = words.iter().map(|w| phrase_key(w)).collect();
+    let mut result: Vec<&str> = Vec::with_capacity(words.len());
+    let mut i = 0;
+
+    while i < words.len() {
+        let max_n = (words.len() - i) / 2;
+        let repeat_len = (2..=max_n).rev().find(|&n| {
+            keys[i..i + n] == keys[i + n..i + 2 * n] && keys[i..i + n].iter().all(|k| !k.is_empty())
+        });
+        match repeat_len {
+            Some(n) => {
+                // Keep the first copy, but let it end the way the last copy did
+                // when that copy closed the sentence.
+                let closing = words[i + 2 * n - 1];
+                let ends_sentence = closing.ends_with(['.', '!', '?', '…']);
+                result.extend_from_slice(&words[i..i + n - 1]);
+                result.push(if ends_sentence {
+                    closing
+                } else {
+                    words[i + n - 1]
+                });
+                i += n;
+                // The repeated copy is dropped; further copies are handled when
+                // the loop reaches them as a fresh repeat of the kept phrase.
+                let dropped_end = i + n;
+                i = dropped_end;
+                // Re-check for a third copy by comparing against the kept phrase.
+                while i + n <= words.len() && keys[i..i + n] == keys[i - 2 * n..i - n] {
+                    i += n;
+                }
+            }
+            None => {
+                result.push(words[i]);
+                i += 1;
+            }
         }
     }
 
@@ -468,7 +529,7 @@ pub fn remove_filler_words(
 /// Kept separate from [`remove_filler_words`] so disabling filler deletion
 /// does not also disable the existing repeated-word and whitespace cleanup.
 pub fn normalize_transcription_output(text: &str) -> String {
-    let mut normalized = collapse_stutters(text);
+    let mut normalized = collapse_repeated_phrases(&collapse_stutters(text));
 
     // Clean up multiple spaces to single space
     normalized = MULTI_SPACE_PATTERN
@@ -659,6 +720,57 @@ mod tests {
         let text = "ha sido un buen día";
         let result = filter_transcription_output(text, "es", &None);
         assert_eq!(result, "ha sido un buen día");
+    }
+
+    #[test]
+    fn test_filter_spanish_removes_sound_fillers_only() {
+        let text = "eh mañana em paso por este lugar, pues emm bueno";
+        let result = filter_transcription_output(text, "es", &None);
+        assert_eq!(result, "mañana paso por este lugar, pues bueno");
+    }
+
+    #[test]
+    fn test_spanish_fillers_gated_to_spanish() {
+        let result = filter_transcription_output("em dash", "en", &None);
+        assert_eq!(result, "em dash");
+    }
+
+    #[test]
+    fn test_repeated_phrase_collapses() {
+        assert_eq!(
+            normalize_transcription_output("mañana paso mañana paso por tu casa"),
+            "mañana paso por tu casa"
+        );
+    }
+
+    #[test]
+    fn test_repeated_phrase_ignores_case_and_punctuation() {
+        assert_eq!(
+            normalize_transcription_output("Voy al mercado, voy al mercado."),
+            "Voy al mercado."
+        );
+    }
+
+    #[test]
+    fn test_repeated_phrase_three_copies() {
+        assert_eq!(
+            normalize_transcription_output("dame eso dame eso dame eso ya"),
+            "dame eso ya"
+        );
+    }
+
+    #[test]
+    fn test_repeated_single_word_twice_kept() {
+        assert_eq!(
+            normalize_transcription_output("no no quiero eso"),
+            "no no quiero eso"
+        );
+    }
+
+    #[test]
+    fn test_non_adjacent_repeat_kept() {
+        let text = "voy al mercado y luego voy al mercado otra vez";
+        assert_eq!(normalize_transcription_output(text), text);
     }
 
     #[test]
