@@ -232,3 +232,15 @@ Matches mockup `docs/mockups/2026-11-03-voice-sources.html` (three options; no G
 - [ ] Step 2: Bump version to `0.10.0` in `package.json`, `src-tauri/tauri.conf.json`, `src-tauri/Cargo.toml`; `bun run tauri build`; install to /Applications (backup previous to `~/TalknGo-old-backup`); reset TCC for `com.grizzlytec.talkngo` and open Accessibility settings.
 - [ ] Step 3: End-to-end (needs Grizzly's Kodiak passphrase in his browser — the only moment he is needed): Settings → Transform → MCP server → paste `https://kodiak.grizzlytec.com/mcp` → Connect → consent page says read-only → status shows "Connected to <name>", guide version 4+, words count > 0. Evidence: `~/Library/Application Support/com.grizzlytec.talkngo/voice_source/status.json` and log lines; Kodiak `voice_clients` verb lists the new client. Then "My voice" rewrite of a selected sentence works. Then revoke via `revoke_voice_client` → next "Sync now" shows "Sign in again" and the cache still works.
 - [ ] Step 4: Commit, push, zip (`TalknGo/` with `TalknGo.app` + `LICENSE`, `ditto -c -k --keepParent`), `gh release create v0.10.0` with SHA-256 in notes (es + en).
+
+## Outcome (2026-11-03)
+
+- Shipped: Kodiak `voice` scope + tools (KODIAK main 010dc4c, migration `voice_clients_and_vocabulary` applied); TalknGo v0.10.0 released (zip SHA-256 9dd9c4b6…51c2c), installed on Grizzly's Mac and connected to Kodiak (guide v4, 10 words; `kodiak.voice_clients` row "TalknGo").
+- Found in testing: qwen2.5:7b slips English words into Spanish "My voice" rewrites (3/5 runs, even with a Spanish-only rule); qwen2.5:14b 0/5, ~3 s vs ~2 s. Grizzly approved switching his Mac to qwen2.5:14b ("do it"); app default stays 7b for smaller Macs.
+- Each new unsigned build asks for the Mac login password once to read the "TalknGo MCP" keychain item (plus Accessibility again).
+
+## Pending / proposals
+
+- "Open voice guide" opens .md in the default app (Notion on Grizzly's Mac): proposed always opening in TextEdit — waiting on Grizzly.
+- Rewrite dropped when the frontmost app changes mid-rewrite: proposed copying the result to the clipboard instead.
+- Parked: RFC 8707 `resource` param / path-aware discovery for third-party servers; code replay creating an extra voice_clients row; revoke end-to-end not run live (covered by Kodiak tests).
