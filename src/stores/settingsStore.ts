@@ -11,6 +11,7 @@ import type {
   VadBackend,
   LanguageDetectionMode,
   TransformEngine,
+  VoiceSource,
   TransformStyle,
 } from "@/bindings";
 import { commands } from "@/bindings";
@@ -190,6 +191,12 @@ const settingUpdaters: {
     commands.changeTransformVoiceGuidePathSetting(
       (value as string | null) ?? null,
     ),
+  voice_source: (value) =>
+    commands.changeVoiceSourceSetting(value as VoiceSource),
+  voice_words_path: (value) =>
+    commands.changeVoiceWordsPathSetting((value as string | null) ?? null),
+  voice_mcp_url: (value) =>
+    commands.changeVoiceMcpUrlSetting((value as string | null) ?? null),
   vad_enabled: (value) => commands.changeVadEnabledSetting(value as boolean),
   long_form_chunking: (value) =>
     commands.changeLongFormChunkingSetting(value as boolean),

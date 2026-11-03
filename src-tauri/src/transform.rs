@@ -45,6 +45,28 @@ pub enum TransformEngine {
     AppleIntelligence,
 }
 
+/// Where the "My voice" guide and the dictation vocabulary come from.
+#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq, Type)]
+#[serde(rename_all = "snake_case")]
+pub enum VoiceSource {
+    /// The guide written inside the app.
+    BuiltIn,
+    /// A file on this Mac.
+    File,
+    /// An MCP server (OAuth sign-in).
+    Mcp,
+}
+
+/// The source in use: the explicit choice, else `File` when a legacy guide
+/// path is set, else `BuiltIn`.
+pub fn effective_voice_source(s: &AppSettings) -> VoiceSource {
+    match s.voice_source {
+        Some(x) => x,
+        None if s.voice_guide_path.is_some() => VoiceSource::File,
+        None => VoiceSource::BuiltIn,
+    }
+}
+
 /// Base URL of the local Ollama server.
 pub const OLLAMA_BASE_URL: &str = "http://localhost:11434";
 /// Default Ollama model for rewriting (editable in settings).
@@ -220,6 +242,57 @@ pub fn change_transform_voice_guide_path_setting(
     }
     let mut current: AppSettings = settings::get_settings(&app);
     current.voice_guide_path = path;
+    settings::write_settings(&app, current);
+    Ok(())
+}
+
+/// Chooses where the voice guide and vocabulary come from.
+#[tauri::command]
+#[specta::specta]
+pub fn change_voice_source_setting(app: AppHandle, source: VoiceSource) -> Result<(), String> {
+    let mut current: AppSettings = settings::get_settings(&app);
+    current.voice_source = Some(source);
+    settings::write_settings(&app, current);
+    Ok(())
+}
+
+/// Sets (or clears with `None`) the file with the dictation words.
+#[tauri::command]
+#[specta::specta]
+pub fn change_voice_words_path_setting(app: AppHandle, path: Option<String>) -> Result<(), String> {
+    let path = path.map(|p| p.trim().to_string()).filter(|p| !p.is_empty());
+    if let Some(p) = &path {
+        check_guide_extension(std::path::Path::new(p))?;
+    }
+    let mut current: AppSettings = settings::get_settings(&app);
+    current.voice_words_path = path;
+    settings::write_settings(&app, current);
+    Ok(())
+}
+
+/// Sets (or clears with `None`) the MCP server address.
+#[tauri::command]
+#[specta::specta]
+pub fn change_voice_mcp_url_setting(app: AppHandle, url: Option<String>) -> Result<(), String> {
+    let url = url.map(|u| u.trim().to_string()).filter(|u| !u.is_empty());
+    let mut current: AppSettings = settings::get_settings(&app);
+    current.voice_mcp_url = url;
+    settings::write_settings(&app, current);
+    Ok(())
+}
+
+/// Sets (or clears with `None`) the MCP tools for the guide and the words.
+#[tauri::command]
+#[specta::specta]
+pub fn change_voice_mcp_tools_setting(
+    app: AppHandle,
+    guide: Option<String>,
+    words: Option<String>,
+) -> Result<(), String> {
+    let clean = |v: Option<String>| v.map(|t| t.trim().to_string()).filter(|t| !t.is_empty());
+    let mut current: AppSettings = settings::get_settings(&app);
+    current.voice_mcp_guide_tool = clean(guide);
+    current.voice_mcp_words_tool = clean(words);
     settings::write_settings(&app, current);
     Ok(())
 }

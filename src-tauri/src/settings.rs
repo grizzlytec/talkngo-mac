@@ -573,6 +573,22 @@ pub struct AppSettings {
     /// `None` = `voice_guide.md` in the app data dir.
     #[serde(default)]
     pub voice_guide_path: Option<String>,
+    /// Where the "My voice" guide and vocabulary come from. `None` = legacy
+    /// behavior (see `transform::effective_voice_source`).
+    #[serde(default)]
+    pub voice_source: Option<crate::transform::VoiceSource>,
+    /// Address of the MCP server used when the source is `Mcp`.
+    #[serde(default)]
+    pub voice_mcp_url: Option<String>,
+    /// MCP tool that returns the voice guide.
+    #[serde(default)]
+    pub voice_mcp_guide_tool: Option<String>,
+    /// MCP tool that returns the dictation words.
+    #[serde(default)]
+    pub voice_mcp_words_tool: Option<String>,
+    /// File on this Mac with the dictation words (source `File`).
+    #[serde(default)]
+    pub voice_words_path: Option<String>,
 }
 
 fn default_model() -> String {
@@ -1091,6 +1107,11 @@ pub fn get_default_settings() -> AppSettings {
         transform_engine: crate::transform::TransformEngine::default(),
         transform_ollama_model: crate::transform::default_ollama_model(),
         voice_guide_path: None,
+        voice_source: None,
+        voice_mcp_url: None,
+        voice_mcp_guide_tool: None,
+        voice_mcp_words_tool: None,
+        voice_words_path: None,
     }
 }
 
@@ -1500,6 +1521,44 @@ mod tests {
             crate::transform::TransformEngine::Ollama
         );
         assert_eq!(settings.transform_ollama_model, "qwen2.5:7b");
+    }
+
+    #[test]
+    fn stores_without_voice_source_load_as_none() {
+        let mut stored = default_settings_json();
+        let obj = stored.as_object_mut().unwrap();
+        for k in [
+            "voice_source",
+            "voice_mcp_url",
+            "voice_mcp_guide_tool",
+            "voice_mcp_words_tool",
+            "voice_words_path",
+        ] {
+            obj.remove(k);
+        }
+        let settings: AppSettings = serde_json::from_value(stored).unwrap();
+        assert_eq!(settings.voice_source, None);
+        assert_eq!(settings.voice_mcp_url, None);
+        assert_eq!(settings.voice_mcp_guide_tool, None);
+        assert_eq!(settings.voice_mcp_words_tool, None);
+        assert_eq!(settings.voice_words_path, None);
+    }
+
+    #[test]
+    fn effective_source_is_file_when_legacy_path_set() {
+        use crate::transform::{effective_voice_source, VoiceSource};
+        let mut s = get_default_settings();
+        s.voice_guide_path = Some("/tmp/guide.md".to_string());
+        assert_eq!(effective_voice_source(&s), VoiceSource::File);
+        s.voice_source = Some(VoiceSource::Mcp);
+        assert_eq!(effective_voice_source(&s), VoiceSource::Mcp);
+    }
+
+    #[test]
+    fn effective_source_defaults_to_built_in() {
+        use crate::transform::{effective_voice_source, VoiceSource};
+        let s = get_default_settings();
+        assert_eq!(effective_voice_source(&s), VoiceSource::BuiltIn);
     }
 
     #[test]

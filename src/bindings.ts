@@ -672,6 +672,38 @@ async changeTransformVoiceGuidePathSetting(path: string | null) : Promise<Result
     else return { status: "error", error: e  as any };
 }
 },
+async changeVoiceSourceSetting(source: VoiceSource) : Promise<Result<null, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("change_voice_source_setting", { source }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+async changeVoiceWordsPathSetting(path: string | null) : Promise<Result<null, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("change_voice_words_path_setting", { path }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+async changeVoiceMcpUrlSetting(url: string | null) : Promise<Result<null, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("change_voice_mcp_url_setting", { url }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+async changeVoiceMcpToolsSetting(guide: string | null, words: string | null) : Promise<Result<null, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("change_voice_mcp_tools_setting", { guide, words }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
 async openVoiceGuide() : Promise<Result<null, string>> {
     try {
     return { status: "ok", data: await TAURI_INVOKE("open_voice_guide") };
@@ -1212,7 +1244,28 @@ transform_ollama_model?: string;
  * Custom file for the "My voice" guide (e.g. in Google Drive for desktop).
  * `None` = `voice_guide.md` in the app data dir.
  */
-voice_guide_path?: string | null }
+voice_guide_path?: string | null; 
+/**
+ * Where the "My voice" guide and vocabulary come from. `None` = legacy
+ * behavior (see `transform::effective_voice_source`).
+ */
+voice_source?: VoiceSource | null; 
+/**
+ * Address of the MCP server used when the source is `Mcp`.
+ */
+voice_mcp_url?: string | null; 
+/**
+ * MCP tool that returns the voice guide.
+ */
+voice_mcp_guide_tool?: string | null; 
+/**
+ * MCP tool that returns the dictation words.
+ */
+voice_mcp_words_tool?: string | null; 
+/**
+ * File on this Mac with the dictation words (source `File`).
+ */
+voice_words_path?: string | null }
 export type AudioDevice = { index: string; name: string; is_default: boolean }
 export type AutoSubmitKey = "enter" | "ctrl_enter" | "cmd_enter"
 export type AutoUnavailableReason = 
@@ -1557,6 +1610,7 @@ export type TransformEngine = "ollama" | "apple_intelligence"
 /**
  * Rewrite styles with their fixed rewrite instructions.
  */
+export type VoiceSource = "built_in" | "file" | "mcp"
 export type TransformStyle = "correct_grammar" | "formal" | "friendlier" | "clearer" | "shorter" | "my_voice"
 export type OllamaStatus = "ready" | "not_running" | "model_missing"
 export type TypingTool = "auto" | "wtype" | "kwtype" | "dotool" | "ydotool" | "xdotool"
