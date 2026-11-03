@@ -40,12 +40,33 @@ pub fn normalize_server_url(server_url: &str) -> String {
     server_url.trim().trim_end_matches('/').to_string()
 }
 
-fn origin_of(server_url: &str) -> Result<String, String> {
-    let u = Url::parse(&normalize_server_url(server_url))
-        .map_err(|_| "That doesn't look like a valid server address".to_string())?;
-    if u.scheme() != "https" && u.scheme() != "http" {
-        return Err("The server address must start with https://".to_string());
+const HTTPS_REQUIRED: &str = "The server address must start with https://";
+
+/// Allows `https://`, and `http://` only for a loopback host (local testing).
+pub fn require_secure(url: &str) -> Result<(), String> {
+    let u =
+        Url::parse(url).map_err(|_| "That doesn't look like a valid server address".to_string())?;
+    match u.scheme() {
+        "https" => Ok(()),
+        "http" if matches!(u.host_str(), Some("127.0.0.1" | "localhost" | "[::1]")) => Ok(()),
+        _ => Err(HTTPS_REQUIRED.to_string()),
     }
+}
+
+fn validate_endpoints(a: AuthServer) -> Result<AuthServer, String> {
+    require_secure(&a.authorization_endpoint)?;
+    require_secure(&a.token_endpoint)?;
+    if let Some(r) = &a.registration_endpoint {
+        require_secure(r)?;
+    }
+    Ok(a)
+}
+
+fn origin_of(server_url: &str) -> Result<String, String> {
+    let normalized = normalize_server_url(server_url);
+    let u = Url::parse(&normalized)
+        .map_err(|_| "That doesn't look like a valid server address".to_string())?;
+    require_secure(&normalized)?;
     Ok(u.origin().ascii_serialization())
 }
 
@@ -108,21 +129,24 @@ pub async fn discover(server_url: &str) -> Result<AuthServer, String> {
                     .as_ref()
                     .and_then(parse_auth_server)
                 {
-                    return Ok(a);
+                    return validate_endpoints(a);
                 }
             }
         }
     }
 
     // Fallback: the server is its own authorization server.
-    get_json(
+    let found = get_json(
         &client,
         &format!("{origin}/.well-known/oauth-authorization-server"),
     )
     .await
     .as_ref()
-    .and_then(parse_auth_server)
-    .ok_or_else(|| "Couldn't find the sign-in details for this server".to_string())
+    .and_then(parse_auth_server);
+    match found {
+        Some(a) => validate_endpoints(a),
+        None => Err("Couldn't find the sign-in details for this server".to_string()),
+    }
 }
 
 /// Returns (verifier, S256 challenge as base64url without padding).
@@ -193,10 +217,28 @@ pub fn parse_callback(request_line: &str, expected_state: &str) -> Result<String
         return Err("Sign-in response didn't match this request; please try again".to_string());
     }
     if let Some(e) = error {
+        let e: String = e
+            .chars()
+            .filter(|c| c.is_ascii_alphanumeric() || matches!(c, '_' | '.' | '-'))
+            .take(64)
+            .collect();
         return Err(format!("Sign-in was not completed ({e})"));
     }
     code.filter(|c| !c.is_empty())
         .ok_or_else(|| "Sign-in response had no code".to_string())
+}
+
+/// True when the callback's `state` is the one we sent.
+fn callback_state_matches(request_line: &str, expected_state: &str) -> bool {
+    let Some(target) = request_line.split_whitespace().nth(1) else {
+        return false;
+    };
+    Url::parse(&format!("http://127.0.0.1{target}"))
+        .map(|u| {
+            u.query_pairs()
+                .any(|(k, v)| k == "state" && v == expected_state)
+        })
+        .unwrap_or(false)
 }
 
 const OK_PAGE: &str = "<!doctype html><html><head><meta charset=\"utf-8\"><title>TalknGo</title></head><body style=\"font-family:-apple-system,sans-serif;text-align:center;margin-top:20vh\"><h2>You're connected.</h2><p>You can close this tab and go back to TalknGo.</p></body></html>";
@@ -255,6 +297,11 @@ async fn wait_for_callback(
                 .unwrap_or(false);
             if !is_callback {
                 respond(&mut stream, "404 Not Found", "Not found").await;
+                continue;
+            }
+            if !callback_state_matches(&line, expected_state) {
+                // Not our request (stale tab, another program): keep waiting.
+                respond(&mut stream, "400 Bad Request", ERR_PAGE).await;
                 continue;
             }
             let result = parse_callback(&line, expected_state);
@@ -328,6 +375,7 @@ async fn post_token_form(
     form: &[(&str, &str)],
     what: &str,
 ) -> Result<Value, String> {
+    require_secure(endpoint)?;
     let resp = client.post(endpoint).form(form).send().await.map_err(|e| {
         format!(
             "{what} failed: couldn't reach the server ({})",
@@ -379,6 +427,7 @@ pub async fn connect(app: &AppHandle, server_url: &str) -> Result<StoredTokens, 
     if wants_voice {
         reg_body["scope"] = json!("voice");
     }
+    require_secure(&registration)?;
     let resp = client
         .post(&registration)
         .json(&reg_body)
@@ -554,30 +603,30 @@ mod tests {
     #[tokio::test]
     async fn discover_falls_back_to_origin_metadata() {
         let meta = json!({
-            "authorization_endpoint": "http://h/authorize",
-            "token_endpoint": "http://h/token",
-            "registration_endpoint": "http://h/register",
+            "authorization_endpoint": "http://127.0.0.1/authorize",
+            "token_endpoint": "http://127.0.0.1/token",
+            "registration_endpoint": "http://127.0.0.1/register",
             "scopes_supported": ["mcp", "voice"],
         })
         .to_string();
         let base = serve(vec![("/.well-known/oauth-authorization-server", 200, meta)]).await;
         let a = discover(&format!("  {base}/mcp/ ")).await.unwrap();
-        assert_eq!(a.token_endpoint, "http://h/token");
+        assert_eq!(a.token_endpoint, "http://127.0.0.1/token");
         assert_eq!(a.scopes_supported, vec!["mcp", "voice"]);
     }
 
     #[tokio::test]
     async fn discover_follows_protected_resource_metadata() {
         let meta = json!({
-            "authorization_endpoint": "http://h/authorize",
-            "token_endpoint": "http://h/token",
+            "authorization_endpoint": "http://127.0.0.1/authorize",
+            "token_endpoint": "http://127.0.0.1/token",
         })
         .to_string();
         let auth = serve(vec![("/.well-known/oauth-authorization-server", 200, meta)]).await;
         let pr = json!({ "authorization_servers": [auth] }).to_string();
         let rs = serve(vec![("/.well-known/oauth-protected-resource", 200, pr)]).await;
         let a = discover(&format!("{rs}/mcp")).await.unwrap();
-        assert_eq!(a.token_endpoint, "http://h/token");
+        assert_eq!(a.token_endpoint, "http://127.0.0.1/token");
     }
 
     #[tokio::test]
@@ -628,5 +677,75 @@ mod tests {
         assert_eq!(t.access_token, "new");
         assert_eq!(t.refresh_token.as_deref(), Some("keepme"));
         assert!(t.expires_at.unwrap() > now_secs() + 3000);
+    }
+
+    #[test]
+    fn require_secure_allows_https_and_loopback_http_only() {
+        assert!(require_secure("https://example.test/mcp").is_ok());
+        for ok in [
+            "http://127.0.0.1:9/x",
+            "http://localhost/x",
+            "http://[::1]:3/x",
+        ] {
+            assert!(require_secure(ok).is_ok(), "{ok}");
+        }
+        for bad in [
+            "http://example.test/mcp",
+            "ftp://example.test",
+            "http://127.0.0.1.evil.test/",
+        ] {
+            assert_eq!(require_secure(bad).unwrap_err(), HTTPS_REQUIRED, "{bad}");
+        }
+        let insecure = AuthServer {
+            authorization_endpoint: "https://a.test/auth".into(),
+            token_endpoint: "http://a.test/token".into(),
+            registration_endpoint: None,
+            scopes_supported: vec![],
+        };
+        assert!(validate_endpoints(insecure).is_err());
+    }
+
+    #[test]
+    fn callback_error_text_is_sanitized() {
+        let long = "a".repeat(200);
+        let e = parse_callback(
+            &format!("GET /callback?error=x%20<script>{long}&state=s HTTP/1.1"),
+            "s",
+        )
+        .unwrap_err();
+        assert!(
+            !e.contains('<') && !e.contains(' ') || e.starts_with("Sign-in was not completed (")
+        );
+        let inner = e
+            .trim_start_matches("Sign-in was not completed (")
+            .trim_end_matches(')');
+        assert!(inner.len() <= 64);
+        assert!(inner
+            .chars()
+            .all(|c| c.is_ascii_alphanumeric() || "_.-".contains(c)));
+    }
+
+    #[tokio::test]
+    async fn wrong_state_callback_gets_400_and_listener_keeps_waiting() {
+        let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let port = listener.local_addr().unwrap().port();
+        let task = tokio::spawn(wait_for_callback(listener, "good", Duration::from_secs(10)));
+        let get = |path: &'static str| async move {
+            let mut s = TcpStream::connect(("127.0.0.1", port)).await.unwrap();
+            s.write_all(format!("GET {path} HTTP/1.1\r\n\r\n").as_bytes())
+                .await
+                .unwrap();
+            let mut out = String::new();
+            s.read_to_string(&mut out).await.unwrap();
+            out
+        };
+        assert!(get("/callback?code=x&state=bad")
+            .await
+            .starts_with("HTTP/1.1 400"));
+        assert!(!task.is_finished());
+        assert!(get("/callback?code=real&state=good")
+            .await
+            .starts_with("HTTP/1.1 200"));
+        assert_eq!(task.await.unwrap().unwrap(), "real");
     }
 }

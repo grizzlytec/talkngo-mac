@@ -95,11 +95,11 @@ mod backend {
 
 pub fn save_tokens(server_url: &str, t: &StoredTokens) -> Result<(), String> {
     let json = serde_json::to_string(t).map_err(|e| format!("Could not encode tokens: {e}"))?;
-    backend::set(server_url, &json)
+    backend::set(&super::oauth::normalize_server_url(server_url), &json)
 }
 
 pub fn load_tokens(server_url: &str) -> Result<Option<StoredTokens>, String> {
-    match backend::get(server_url)? {
+    match backend::get(&super::oauth::normalize_server_url(server_url))? {
         None => Ok(None),
         Some(json) => serde_json::from_str(&json)
             .map(Some)
@@ -108,7 +108,7 @@ pub fn load_tokens(server_url: &str) -> Result<Option<StoredTokens>, String> {
 }
 
 pub fn delete_tokens(server_url: &str) -> Result<(), String> {
-    backend::remove(server_url)
+    backend::remove(&super::oauth::normalize_server_url(server_url))
 }
 
 #[cfg(test)]
@@ -131,5 +131,20 @@ mod tests {
         delete_tokens(url).unwrap();
         assert!(load_tokens(url).unwrap().is_none());
         delete_tokens(url).unwrap();
+    }
+
+    #[test]
+    fn urls_are_normalized_on_every_call() {
+        let t = StoredTokens {
+            access_token: "a".into(),
+            refresh_token: None,
+            expires_at: None,
+            client_id: "c".into(),
+            token_endpoint: "https://n.test/token".into(),
+        };
+        save_tokens(" https://norm.test/mcp/ ", &t).unwrap();
+        assert!(load_tokens("https://norm.test/mcp").unwrap().is_some());
+        delete_tokens("https://norm.test/mcp/").unwrap();
+        assert!(load_tokens("https://norm.test/mcp/").unwrap().is_none());
     }
 }
