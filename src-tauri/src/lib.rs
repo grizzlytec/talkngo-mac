@@ -29,6 +29,7 @@ mod transform;
 mod tray;
 mod tray_i18n;
 mod utils;
+mod voice_source;
 mod voice_sync;
 
 pub use cli::CliArgs;
