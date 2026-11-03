@@ -185,7 +185,14 @@ pub fn parse_words(text: &str) -> Vec<String> {
         .collect()
 }
 
-async fn read_capped(mut response: reqwest::Response) -> Result<String, McpError> {
+/// Reads the body (capped). For an event stream, stops as soon as the message
+/// with `id` has arrived instead of waiting for the stream to close.
+async fn read_capped(
+    mut response: reqwest::Response,
+    content_type: &str,
+    id: u64,
+) -> Result<String, McpError> {
+    let is_sse = content_type.contains("text/event-stream");
     if response
         .content_length()
         .is_some_and(|n| n as usize > MAX_BODY_BYTES)
@@ -202,6 +209,9 @@ async fn read_capped(mut response: reqwest::Response) -> Result<String, McpError
             return Err(other("The server's reply was too large"));
         }
         buf.extend_from_slice(&chunk);
+        if is_sse && parse_rpc_body(content_type, &String::from_utf8_lossy(&buf), id).is_ok() {
+            break;
+        }
     }
     String::from_utf8(buf).map_err(|_| other("The server sent an unreadable reply"))
 }
@@ -261,7 +271,7 @@ impl McpSession {
             .and_then(|v| v.to_str().ok())
             .unwrap_or("")
             .to_string();
-        let text = read_capped(response).await?;
+        let text = read_capped(response, &content_type, id).await?;
         let msg = parse_rpc_body(&content_type, &text, id).map_err(other)?;
         Ok((Some(msg), sid))
     }
@@ -385,8 +395,8 @@ mod tests {
     #[test]
     fn parse_words_accepts_object_array_and_lines() {
         assert_eq!(
-            parse_words(r#"{"words":["Loxone","Kodiak"]}"#),
-            ["Loxone", "Kodiak"]
+            parse_words(r#"{"words":["Loxone","Zephyr"]}"#),
+            ["Loxone", "Zephyr"]
         );
         assert_eq!(parse_words(r#"["a","b"]"#), ["a", "b"]);
         assert_eq!(parse_words("one\n  two \n\nthree"), ["one", "two", "three"]);

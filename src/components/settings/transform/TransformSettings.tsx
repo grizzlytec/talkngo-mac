@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { open } from "@tauri-apps/plugin-dialog";
 import { commands } from "@/bindings";
 import type { OllamaStatus, TransformEngine, TransformStyle } from "@/bindings";
 import { useSettings } from "../../../hooks/useSettings";

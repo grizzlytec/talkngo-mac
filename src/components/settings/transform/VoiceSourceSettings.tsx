@@ -102,7 +102,11 @@ export const VoiceSourceSettings: React.FC = () => {
   };
 
   const disconnect = async () => {
-    await commands.voiceSourceDisconnect();
+    const result = await commands.voiceSourceDisconnect();
+    if (result.status === "error") {
+      flash(result.error);
+      return;
+    }
     setStatus(null);
     setTools(null);
     setUrlDraft("");
@@ -143,7 +147,11 @@ export const VoiceSourceSettings: React.FC = () => {
   };
 
   const saveTools = async (guide: string | null, words: string | null) => {
-    await commands.changeVoiceMcpToolsSetting(guide, words);
+    const result = await commands.changeVoiceMcpToolsSetting(guide, words);
+    if (result.status === "error") {
+      flash(result.error);
+      return;
+    }
     await refreshSettings();
     await syncNow();
   };
@@ -167,7 +175,7 @@ export const VoiceSourceSettings: React.FC = () => {
     ...usable.map((tool) => ({ value: tool.name, label: tool.name })),
   ];
   const standardFound =
-    (tools ?? []).some((tool) => tool.name === "get_voice_guide") ||
+    (tools ?? []).some((tool) => tool.name === "get_voice_guide") &&
     (tools ?? []).some((tool) => tool.name === "get_vocabulary");
   const showToolPicker = connected && tools !== null && !standardFound;
 

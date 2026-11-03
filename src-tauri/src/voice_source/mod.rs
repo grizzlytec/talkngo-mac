@@ -288,11 +288,10 @@ pub async fn voice_source_connect(app: AppHandle, url: String) -> Result<SourceS
     if url.is_empty() {
         return Err("Enter the server address".to_string());
     }
-    let mut s = settings::get_settings(&app);
-    s.voice_mcp_url = Some(url.clone());
-    settings::write_settings(&app, s);
+    // Nothing is saved unless sign-in succeeds.
     oauth::connect(&app, &url).await?;
     let mut s = settings::get_settings(&app);
+    s.voice_mcp_url = Some(url.clone());
     s.voice_source = Some(VoiceSource::Mcp);
     settings::write_settings(&app, s);
     sync_now(&app).await
@@ -414,7 +413,8 @@ mod tests {
             std::fs::read_to_string(cache::guide_file(&dir)).unwrap(),
             "v4 text"
         );
-        assert!(cache::store_words(&dir, &[]).is_err());
+        assert!(cache::store_words(&dir, &[]).is_ok());
+        assert!(cache::read_words(&dir).is_empty());
         std::fs::remove_dir_all(&dir).unwrap();
     }
 
@@ -454,9 +454,9 @@ mod tests {
         let mut s = get_default_settings();
         s.voice_source = Some(VoiceSource::BuiltIn);
         assert!(source_words_for(&s, &data).is_empty());
-        cache::store_words(&data.join(CACHE_DIR), &words(&["Kodiak"])).unwrap();
+        cache::store_words(&data.join(CACHE_DIR), &words(&["Zephyr"])).unwrap();
         s.voice_source = Some(VoiceSource::Mcp);
-        assert_eq!(source_words_for(&s, &data), words(&["Kodiak"]));
+        assert_eq!(source_words_for(&s, &data), words(&["Zephyr"]));
         let f = data.join("w.txt");
         std::fs::write(&f, "Loxone = locks one\nTouch Pure").unwrap();
         s.voice_source = Some(VoiceSource::File);

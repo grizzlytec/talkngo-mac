@@ -72,12 +72,8 @@ pub fn store_guide(dir: &Path, raw: &str) -> Result<Option<i64>, String> {
     Ok(version)
 }
 
-/// Stores the parsed words in `dir/words.json`. An empty list keeps the
-/// previous cache (a server hiccup must not wipe the vocabulary).
+/// Stores the parsed words in `dir/words.json`. An empty list is valid.
 pub fn store_words(dir: &Path, words: &[String]) -> Result<(), String> {
-    if words.is_empty() {
-        return Err("The server sent no words; kept the previous list".to_string());
-    }
     std::fs::create_dir_all(dir).map_err(|e| format!("cache dir failed: {e}"))?;
     let text = serde_json::to_string(words).map_err(|e| e.to_string())?;
     write_atomic(&dir.join(WORDS_FILE), &text)
