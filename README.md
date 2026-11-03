@@ -31,7 +31,12 @@ _Voice dictation and text rewriting, all on your Mac, no internet needed._
    ollama pull qwen2.5:7b
    ```
    TalknGo abre Ollama solo cuando hace falta. El modelo se puede cambiar en **Ajustes → Transform**.
-7. Opcional, para el estilo **Mi voz**: escribe tu guía de voz en un archivo `.md` o `.txt` (cómo escribes, tono, muletillas, ejemplos). Puede estar en tu carpeta de Google Drive. En **Ajustes → Transform**, pulsa **Elegir archivo…** y selecciónalo (los archivos `.gdoc` no sirven: guárdalo como texto). Con **Abrir guía de voz** editas la guía predeterminada de la app.
+7. Opcional, para el estilo **Mi voz**: en **Ajustes → Transform → Guía de mi voz — fuente** elige de dónde sale tu guía (cómo escribes, tono, muletillas, ejemplos) y tu lista de palabras especiales:
+   - **Servidor MCP**: pega la dirección de tu servidor MCP, pulsa **Conectar** e inicia sesión una vez en el navegador. TalknGo guarda el acceso en el llavero de tu Mac y actualiza la guía y las palabras cada hora.
+   - **Archivo**: un `.md` o `.txt` en tu computadora (puede estar en una carpeta de Google Drive o Dropbox; los `.gdoc` no sirven, guárdalo como texto). Opcional: un segundo archivo con palabras, una por línea.
+   - **Escríbela aquí**: la guía integrada; **Abrir guía de voz** la edita.
+
+   Las palabras de la fuente se suman a las que escribes en la app.
 
 ### Teclas
 
@@ -64,7 +69,19 @@ _Voice dictation and text rewriting, all on your Mac, no internet needed._
    ollama pull qwen2.5:7b
    ```
    TalknGo starts Ollama by itself when needed. You can change the model in **Settings → Transform**.
-7. Optional, for the **My voice** style: write your own voice guide in a `.md` or `.txt` file (how you write, tone, habits, examples). It can live in your Google Drive folder. In **Settings → Transform**, click **Choose file…** and pick it (`.gdoc` files do not work: save it as plain text). **Open voice guide** edits the app's default guide.
+7. Optional, for the **My voice** style: in **Settings → Transform → My voice guide — source**, pick where your guide (how you write, tone, habits, examples) and your special-words list come from:
+   - **MCP server**: paste your MCP server address, click **Connect** and sign in once in your browser. TalknGo keeps the access in your Mac's keychain and refreshes the guide and words every hour.
+   - **File**: a `.md` or `.txt` on your computer (it can live in a Google Drive or Dropbox folder; `.gdoc` files do not work, save it as plain text). Optional: a second file with words, one per line.
+   - **Write it here**: the built-in guide; **Open voice guide** edits it.
+
+   Words from the source are added to the ones you type in the app.
+
+### Make your MCP server work with TalknGo
+
+- Expose a tool named `get_voice_guide` (no required arguments) that returns the guide as text, or as JSON text `{"version": 4, "guide": "…"}`.
+- Expose a tool named `get_vocabulary` (no required arguments) that returns `{"words": ["…"]}`, a JSON array, or one word per line. An entry like `Loxone = lox one, locks one` keeps only the word before `=`.
+- If your tools have other names, TalknGo lets you pick them from a menu after connecting.
+- Sign-in: Streamable HTTP MCP with OAuth 2.1 (PKCE), dynamic client registration, and loopback redirects `http://127.0.0.1:<port>/callback`. The server address must use `https://`. If your server advertises a `voice` scope, TalknGo asks only for it — use it to give TalknGo read-only access.
 
 ### Keys
 
