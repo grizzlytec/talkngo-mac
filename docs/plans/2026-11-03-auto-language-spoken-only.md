@@ -25,4 +25,15 @@ detector is missing/fails it fell back to the model's own detection — the same
 - End to end: dictate "test" and a Spanish sentence; log shows `Language detection:` lines, output Latin script.
 
 ## Pending
-- Build release 0.9.9, publish on GitHub, install on this Mac.
+- Grizzly's real-voice check: "test" → Latin "Test"; a Spanish sentence stays Spanish.
+
+## Where we are (handoff 2026-11-03 09:33)
+- Done: fallback fix committed `0c8cf89` on main (376 lib tests pass); release v0.9.9 published
+  (zip SHA-256 c85083c9…); 0.9.9 installed in /Applications on this Mac (0.9.8 backup in ~/TalknGo-old-backup).
+- Done: this Mac needed bun (npm -g) and cmake (brew) to build.
+- In progress: macOS permissions reset (tccutil) for com.grizzlytec.talkngo; Grizzly re-adding Accessibility
+  and turning on Settings → Advanced → "Limit Auto to My Languages" (downloads the detector).
+- Next step: on the other Mac, download and install v0.9.9 from Releases, re-grant permissions, turn on
+  "Limit Auto to My Languages", dictate "test" and check the log for `Language detection:` lines.
+- Open questions: voice guide sync config (`voice_sync.json`) exists only on the other Mac — copy it here?
+  Apple Developer signing (USD 99/yr) so updates stop resetting permissions?
