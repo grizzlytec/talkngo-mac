@@ -146,7 +146,10 @@ pub fn build_system_prompt(style: TransformStyle, voice_guide: Option<&str>) -> 
         return Some(format!(
             "Below is the author's voice guide.\n\n<voice_guide>\n{guide}\n</voice_guide>\n\n\
              YOUR TASK: {} Remove phrases from the guide's Never list and make it plain, short \
-             and direct like the guide's real examples.\n\n{HARD_RULES}",
+             and direct like the guide's real examples. The guide may be written in another \
+             language than the text: apply its style, never its language. If the text is in \
+             Spanish, every word of your reply is Spanish (\"realmente\" stays \"realmente\", \
+             never \"really\").\n\n{HARD_RULES}",
             style.instruction()
         ));
     }
@@ -1064,6 +1067,10 @@ mod tests {
         let guide_at = prompt.find(GUIDE).expect("guide text present");
         let rules_at = prompt.find("Hard rules").expect("rules present");
         assert!(guide_at < rules_at);
+        let language_at = prompt
+            .find("apply its style, never its language")
+            .expect("guide-language rule present");
+        assert!(guide_at < language_at);
     }
 
     #[test]
