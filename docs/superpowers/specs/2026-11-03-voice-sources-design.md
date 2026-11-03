@@ -1,6 +1,6 @@
 # Voice sources: connect your MCP, a file, or write it here
 
-Status: draft for Grizzly's approval (Drive dropped) · 2026-11-03
+Status: APPROVED by Grizzly 2026-11-03 ("ok dejemoslo asi") — includes the Kodiak production changes below
 Mockups: `docs/mockups/2026-11-03-voice-sources.html` (approved direction; option label must not say "Kodiak")
 
 ## Intent and why
