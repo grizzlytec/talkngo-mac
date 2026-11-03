@@ -144,7 +144,12 @@ const ANTHROPIC_MAX_TOKENS: u32 = 4096;
 struct AnthropicMessagesRequest {
     model: String,
     max_tokens: u32,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    system: Option<String>,
     messages: Vec<ChatMessage>,
+    /// `{"effort": "low"}` for quick rewrites; omitted for dictation cleanup.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    output_config: Option<serde_json::Value>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -537,10 +542,12 @@ async fn send_anthropic_message(
     let request_body = AnthropicMessagesRequest {
         model: model.to_string(),
         max_tokens: ANTHROPIC_MAX_TOKENS,
+        system: None,
         messages: vec![ChatMessage {
             role: "user".to_string(),
             content: prompt,
         }],
+        output_config: None,
     };
 
     let response = create_client(provider, &api_key)?
@@ -583,6 +590,125 @@ async fn send_anthropic_message(
     }
 
     Ok(message.into_text())
+}
+
+/// Why a Claude request failed, so callers can tell the user what to fix.
+#[derive(Debug, PartialEq, Eq)]
+pub enum ClaudeError {
+    /// Could not reach the server (no internet, DNS, refused).
+    Offline(String),
+    /// HTTP 401/403: the API key was rejected.
+    KeyRejected,
+    Other(String),
+}
+
+impl ClaudeError {
+    pub fn into_message(self) -> String {
+        match self {
+            ClaudeError::Offline(m) | ClaudeError::Other(m) => m,
+            ClaudeError::KeyRejected => "Anthropic rejected the API key".to_string(),
+        }
+    }
+}
+
+fn classify_claude_send_error(e: &reqwest::Error) -> ClaudeError {
+    if e.is_connect() {
+        ClaudeError::Offline("Could not reach Anthropic (no internet?)".to_string())
+    } else if e.is_timeout() {
+        ClaudeError::Other("Anthropic did not answer in time".to_string())
+    } else {
+        ClaudeError::Other(format!("Anthropic request failed: {}", e))
+    }
+}
+
+fn claude_client(
+    api_key: &str,
+    timeout: std::time::Duration,
+) -> Result<reqwest::Client, ClaudeError> {
+    let mut headers = HeaderMap::new();
+    let mut key = HeaderValue::from_str(api_key)
+        .map_err(|_| ClaudeError::Other("The API key has invalid characters".to_string()))?;
+    key.set_sensitive(true);
+    headers.insert("x-api-key", key);
+    headers.insert("anthropic-version", HeaderValue::from_static("2023-06-01"));
+    reqwest::Client::builder()
+        .default_headers(headers)
+        .timeout(timeout)
+        .build()
+        .map_err(|e| ClaudeError::Other(format!("Failed to build HTTP client: {e}")))
+}
+
+/// One rewrite on the Anthropic Messages API with a system prompt.
+/// `base_url` is e.g. `https://api.anthropic.com/v1`.
+pub async fn send_anthropic_with_system(
+    base_url: &str,
+    api_key: &str,
+    model: &str,
+    system: &str,
+    user: &str,
+    timeout: std::time::Duration,
+) -> Result<String, ClaudeError> {
+    let url = format!("{}/messages", base_url.trim_end_matches('/'));
+    let body = AnthropicMessagesRequest {
+        model: model.to_string(),
+        max_tokens: ANTHROPIC_MAX_TOKENS,
+        system: Some(system.to_string()),
+        messages: vec![ChatMessage {
+            role: "user".to_string(),
+            content: user.to_string(),
+        }],
+        output_config: Some(serde_json::json!({ "effort": "low" })),
+    };
+    let response = claude_client(api_key, timeout)?
+        .post(&url)
+        .json(&body)
+        .send()
+        .await
+        .map_err(|e| classify_claude_send_error(&e))?;
+    let status = response.status();
+    if status == reqwest::StatusCode::UNAUTHORIZED || status == reqwest::StatusCode::FORBIDDEN {
+        return Err(ClaudeError::KeyRejected);
+    }
+    if !status.is_success() {
+        let text = response.text().await.unwrap_or_default();
+        let text: String = text.chars().take(200).collect();
+        return Err(ClaudeError::Other(format!(
+            "Anthropic request failed with status {status}: {text}"
+        )));
+    }
+    let message: AnthropicMessagesResponse = response.json().await.map_err(|e| {
+        ClaudeError::Other(format!("Invalid Anthropic response: {}", e.without_url()))
+    })?;
+    if message.stop_reason.as_deref() == Some("max_tokens") {
+        return Err(ClaudeError::Other(
+            "Anthropic response was truncated".to_string(),
+        ));
+    }
+    message
+        .into_text()
+        .ok_or_else(|| ClaudeError::Other("Anthropic response had no text".to_string()))
+}
+
+/// Cheap key check: `GET /models`. Ok(()) when the key is accepted.
+pub async fn check_anthropic_key(
+    base_url: &str,
+    api_key: &str,
+    timeout: std::time::Duration,
+) -> Result<(), ClaudeError> {
+    let url = format!("{}/models?limit=1", base_url.trim_end_matches('/'));
+    let response = claude_client(api_key, timeout)?
+        .get(&url)
+        .send()
+        .await
+        .map_err(|e| classify_claude_send_error(&e))?;
+    let status = response.status();
+    if status == reqwest::StatusCode::UNAUTHORIZED || status == reqwest::StatusCode::FORBIDDEN {
+        Err(ClaudeError::KeyRejected)
+    } else if status.is_success() {
+        Ok(())
+    } else {
+        Err(ClaudeError::Other(format!("Anthropic returned {status}")))
+    }
 }
 
 /// Fetch available models from an OpenAI-compatible API
@@ -886,12 +1012,15 @@ mod tests {
         let request = AnthropicMessagesRequest {
             model: "claude-haiku".to_string(),
             max_tokens: ANTHROPIC_MAX_TOKENS,
+            system: None,
             messages: vec![ChatMessage {
                 role: "user".to_string(),
                 content: "hi".to_string(),
             }],
+            output_config: None,
         };
         let json = serde_json::to_value(&request).unwrap();
+        assert!(json.get("system").is_none());
         assert_eq!(json["max_tokens"], ANTHROPIC_MAX_TOKENS);
         assert_eq!(json["messages"][0]["role"], "user");
         assert!(json.get("stream").is_none());
@@ -962,5 +1091,67 @@ mod tests {
         )
         .await;
         assert!(result.unwrap_err().contains("truncated"));
+    }
+
+    #[tokio::test]
+    async fn claude_rewrite_parses_response() {
+        let base_url = serve_one_response(
+            "200 OK",
+            r#"{"content":[{"type":"text","text":"Rewritten"}]}"#,
+        )
+        .await;
+        let result = send_anthropic_with_system(
+            &base_url,
+            "key",
+            "claude-haiku-5-5",
+            "sys",
+            "text",
+            std::time::Duration::from_secs(5),
+        )
+        .await;
+        assert_eq!(result, Ok("Rewritten".to_string()));
+    }
+
+    #[tokio::test]
+    async fn claude_401_means_key_rejected() {
+        let base_url = serve_one_response("401 Unauthorized", r#"{"type":"error"}"#).await;
+        let result = check_anthropic_key(&base_url, "bad", std::time::Duration::from_secs(5)).await;
+        assert_eq!(result, Err(ClaudeError::KeyRejected));
+        let base_url = serve_one_response("401 Unauthorized", r#"{"type":"error"}"#).await;
+        let result = send_anthropic_with_system(
+            &base_url,
+            "bad",
+            "m",
+            "s",
+            "u",
+            std::time::Duration::from_secs(5),
+        )
+        .await;
+        assert_eq!(result, Err(ClaudeError::KeyRejected));
+    }
+
+    #[tokio::test]
+    async fn claude_connect_error_means_offline() {
+        // Port 1 on localhost refuses connections.
+        let result =
+            check_anthropic_key("http://127.0.0.1:1", "k", std::time::Duration::from_secs(5)).await;
+        assert!(matches!(result, Err(ClaudeError::Offline(_))));
+    }
+
+    #[test]
+    fn claude_request_carries_system_prompt() {
+        let request = AnthropicMessagesRequest {
+            model: "claude-haiku-5-5".to_string(),
+            max_tokens: ANTHROPIC_MAX_TOKENS,
+            system: Some("be brief".to_string()),
+            messages: vec![ChatMessage {
+                role: "user".to_string(),
+                content: "hi".to_string(),
+            }],
+            output_config: None,
+        };
+        let json = serde_json::to_value(&request).unwrap();
+        assert_eq!(json["system"], "be brief");
+        assert_eq!(json["messages"][0]["content"], "hi");
     }
 }

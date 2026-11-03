@@ -907,14 +907,18 @@
       "title": "Reescribir texto seleccionado",
       "engine": {
         "title": "Motor",
-        "description": "Se ejecuta en tu Mac, sin internet.",
+        "description": "Ollama y Apple Intelligence funcionan en tu Mac. Claude usa internet.",
         "ollama": "Ollama (local)",
         "appleIntelligence": "Apple Intelligence",
         "checking": "Comprobando...",
         "ready": "Lista",
         "unavailable": "No disponible",
         "notRunning": "No está en marcha",
-        "modelMissing": "Modelo no descargado"
+        "modelMissing": "Modelo no descargado",
+        "claude": "Claude (internet)",
+        "noKey": "Sin llave de API",
+        "keyRejected": "Llave rechazada",
+        "offline": "Sin conexión"
       },
       "style": {
         "title": "Estilo",
@@ -1002,6 +1006,23 @@
         "wordsFile": "Archivo de palabras (opcional)",
         "noFile": "Ningún archivo elegido",
         "clear": "Quitar"
+      },
+      "claude": {
+        "apiKey": {
+          "title": "Llave de API de Anthropic",
+          "placeholder": "Pega tu llave de API (sk-ant-…)",
+          "save": "Guardar",
+          "remove": "Quitar",
+          "hint": "Se guarda en el llavero de tu Mac. Consigue una en console.anthropic.com.",
+          "saveFailed": "No se pudo guardar la llave: {{error}}"
+        },
+        "model": {
+          "title": "Modelo",
+          "description": "Haiku es rápido y cuesta unos $0.30 por cada 1,000 reescrituras. Sonnet escribe un poco mejor, unos $6 por cada 1,000.",
+          "haiku": "Claude Haiku 5.5",
+          "sonnet": "Claude Sonnet 5.5"
+        },
+        "privacy": "El texto que seleccionas se envía a Anthropic para reescribirlo. Nada más sale de tu Mac."
       }
     }
   },
@@ -1067,7 +1088,10 @@
     "transcribing": "Transcribiendo...",
     "processing": "Procesando...",
     "loadingModel": "Cargando modelo...",
-    "rewriting": "Reescribiendo..."
+    "rewriting": "Reescribiendo...",
+    "rewriteOffline": "Sin internet — tu texto quedó igual",
+    "rewriteKey": "Revisa tu clave de API — tu texto quedó igual",
+    "rewriteFailed": "No se pudo reescribir — tu texto quedó igual"
   },
   "secureInput": {
     "blockedWithCulprit_one": "{{name}} puede estar bloqueando 1 atajo",

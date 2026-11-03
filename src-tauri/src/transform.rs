@@ -12,6 +12,7 @@
 //! Nothing destructive happens on any failure path: the clipboard is restored
 //! and the selection is left untouched.
 
+use crate::llm_client::ClaudeError;
 use crate::settings::{self, AppSettings};
 use serde::{Deserialize, Serialize};
 use specta::Type;
@@ -43,6 +44,8 @@ pub enum TransformEngine {
     #[default]
     Ollama,
     AppleIntelligence,
+    /// Claude over the internet (Anthropic API, key in the keychain).
+    Claude,
 }
 
 /// Where the "My voice" guide and the dictation vocabulary come from.
@@ -77,6 +80,28 @@ const OLLAMA_CHAT_TIMEOUT: Duration = Duration::from_secs(60);
 const OLLAMA_STATUS_TIMEOUT: Duration = Duration::from_secs(3);
 /// File with the user's voice guide, inside the app data dir.
 pub const VOICE_GUIDE_FILE: &str = "voice_guide.md";
+
+/// Claude models offered for rewriting.
+pub const CLAUDE_MODELS: [&str; 2] = ["claude-haiku-5-5", "claude-sonnet-5-5"];
+pub const DEFAULT_CLAUDE_MODEL: &str = "claude-haiku-5-5";
+const ANTHROPIC_BASE_URL: &str = "https://api.anthropic.com/v1";
+const CLAUDE_CHAT_TIMEOUT: Duration = Duration::from_secs(15);
+const CLAUDE_STATUS_TIMEOUT: Duration = Duration::from_secs(5);
+/// How long the "couldn't rewrite" notice stays on screen.
+#[cfg(all(target_os = "macos", target_arch = "aarch64"))]
+const REWRITE_FAILED_NOTICE: Duration = Duration::from_millis(2500);
+
+const CLAUDE_KEY_SERVICE: &str = "TalknGo Anthropic";
+const CLAUDE_KEY_ACCOUNT: &str = "anthropic_api_key";
+
+pub fn default_claude_model() -> String {
+    DEFAULT_CLAUDE_MODEL.to_string()
+}
+
+/// True when `model` is one of the offered Claude models.
+pub fn is_valid_claude_model(model: &str) -> bool {
+    CLAUDE_MODELS.contains(&model)
+}
 
 pub fn default_ollama_model() -> String {
     DEFAULT_OLLAMA_MODEL.to_string()
@@ -697,6 +722,182 @@ pub fn change_transform_ollama_model_setting(app: AppHandle, model: String) -> R
     Ok(())
 }
 
+#[tauri::command]
+#[specta::specta]
+pub fn change_transform_claude_model_setting(app: AppHandle, model: String) -> Result<(), String> {
+    let model = model.trim();
+    if !is_valid_claude_model(model) {
+        return Err(format!("Unknown Claude model: {model}"));
+    }
+    let mut current: AppSettings = settings::get_settings(&app);
+    current.transform_claude_model = model.to_string();
+    settings::write_settings(&app, current);
+    Ok(())
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq, Type)]
+#[serde(rename_all = "snake_case")]
+pub enum ClaudeStatus {
+    Ready,
+    NoKey,
+    KeyRejected,
+    Offline,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, Eq, Type)]
+pub struct ClaudeKeyStatus {
+    pub saved: bool,
+    /// Last four characters of the saved key (never the whole key).
+    pub last4: Option<String>,
+}
+
+#[cfg(target_os = "macos")]
+mod key_store {
+    use super::{CLAUDE_KEY_ACCOUNT, CLAUDE_KEY_SERVICE};
+
+    fn entry() -> Result<keyring::Entry, String> {
+        keyring::Entry::new(CLAUDE_KEY_SERVICE, CLAUDE_KEY_ACCOUNT)
+            .map_err(|e| format!("Keychain error: {e}"))
+    }
+
+    pub fn set(key: &str) -> Result<(), String> {
+        entry()?
+            .set_password(key)
+            .map_err(|e| format!("Could not save to the Keychain: {e}"))
+    }
+
+    pub fn get() -> Result<Option<String>, String> {
+        match entry()?.get_password() {
+            Ok(v) => Ok(Some(v)),
+            Err(keyring::Error::NoEntry) => Ok(None),
+            Err(e) => Err(format!("Could not read the Keychain: {e}")),
+        }
+    }
+
+    pub fn remove() -> Result<(), String> {
+        match entry()?.delete_credential() {
+            Ok(()) | Err(keyring::Error::NoEntry) => Ok(()),
+            Err(e) => Err(format!("Could not delete from the Keychain: {e}")),
+        }
+    }
+}
+
+#[cfg(not(target_os = "macos"))]
+mod key_store {
+    pub fn set(_key: &str) -> Result<(), String> {
+        Err("The Keychain is only available on macOS".to_string())
+    }
+    pub fn get() -> Result<Option<String>, String> {
+        Ok(None)
+    }
+    pub fn remove() -> Result<(), String> {
+        Ok(())
+    }
+}
+
+/// Last four characters of `key`, or None when it is too short to show safely.
+pub fn key_last4(key: &str) -> Option<String> {
+    let chars: Vec<char> = key.chars().collect();
+    (chars.len() >= 8).then(|| chars[chars.len() - 4..].iter().collect())
+}
+
+#[tauri::command]
+#[specta::specta]
+pub fn save_claude_api_key(key: String) -> Result<(), String> {
+    let key = key.trim();
+    if key.is_empty() {
+        return Err("The API key is empty".to_string());
+    }
+    key_store::set(key)
+}
+
+#[tauri::command]
+#[specta::specta]
+pub fn remove_claude_api_key() -> Result<(), String> {
+    key_store::remove()
+}
+
+#[tauri::command]
+#[specta::specta]
+pub fn claude_key_status() -> Result<ClaudeKeyStatus, String> {
+    Ok(match key_store::get()? {
+        Some(k) => ClaudeKeyStatus {
+            saved: true,
+            last4: key_last4(&k),
+        },
+        None => ClaudeKeyStatus {
+            saved: false,
+            last4: None,
+        },
+    })
+}
+
+/// Maps the result of the key check to the status shown in settings.
+pub fn claude_status_from_check(result: Result<(), ClaudeError>) -> ClaudeStatus {
+    match result {
+        Ok(()) => ClaudeStatus::Ready,
+        Err(ClaudeError::KeyRejected) => ClaudeStatus::KeyRejected,
+        Err(ClaudeError::Offline(_)) => ClaudeStatus::Offline,
+        // Anthropic answered with something odd: the key itself was not refused.
+        Err(ClaudeError::Other(_)) => ClaudeStatus::Ready,
+    }
+}
+
+#[tauri::command]
+#[specta::specta]
+pub async fn check_claude_status() -> ClaudeStatus {
+    let key = match key_store::get() {
+        Ok(Some(k)) => k,
+        _ => return ClaudeStatus::NoKey,
+    };
+    claude_status_from_check(
+        crate::llm_client::check_anthropic_key(ANTHROPIC_BASE_URL, &key, CLAUDE_STATUS_TIMEOUT)
+            .await,
+    )
+}
+
+/// One rewrite on Claude with the key from the keychain.
+#[cfg_attr(
+    not(all(target_os = "macos", target_arch = "aarch64")),
+    allow(dead_code)
+)]
+/// Overlay notice for a failed Claude rewrite: no internet, key missing or
+/// rejected, or anything else.
+fn claude_failure_overlay_state(error: &crate::llm_client::ClaudeError) -> &'static str {
+    match error {
+        crate::llm_client::ClaudeError::Offline(_) => "rewrite_offline",
+        crate::llm_client::ClaudeError::KeyRejected => "rewrite_key",
+        crate::llm_client::ClaudeError::Other(_) => "rewrite_failed",
+    }
+}
+
+/// Rewrites with Claude. On failure returns the overlay state to show and the
+/// log message.
+async fn claude_rewrite(
+    model: &str,
+    system: &str,
+    user: &str,
+) -> Result<String, (&'static str, String)> {
+    let key = key_store::get()
+        .map_err(|e| ("rewrite_failed", e))?
+        .ok_or_else(|| ("rewrite_key", "No Anthropic API key saved".to_string()))?;
+    crate::llm_client::send_anthropic_with_system(
+        ANTHROPIC_BASE_URL,
+        &key,
+        model,
+        system,
+        user,
+        CLAUDE_CHAT_TIMEOUT,
+    )
+    .await
+    .map_err(|e| {
+        let state = claude_failure_overlay_state(&e);
+        let msg = e.into_message();
+        log::error!("Claude rewrite failed: {msg}");
+        (state, msg)
+    })
+}
+
 pub use platform::run_transform_selection;
 
 #[cfg(all(target_os = "macos", target_arch = "aarch64"))]
@@ -924,21 +1125,31 @@ mod platform {
             style.id(),
             engine
         );
-        let overlay_generation = overlay::show_rewriting_overlay(app);
+        let mut overlay_generation = overlay::show_rewriting_overlay(app);
 
-        let outcome = match engine {
+        // Failed Claude rewrites carry the overlay notice to show; the local
+        // engines keep their silent failure.
+        let outcome: Result<String, (Option<&'static str>, String)> = match engine {
             TransformEngine::AppleIntelligence => {
                 apple_intelligence::process_text_with_system_prompt(
                     &system_prompt,
                     selection.trim(),
                     0,
                 )
+                .map_err(|e| (None, e))
             }
+            TransformEngine::Claude => tauri::async_runtime::block_on(claude_rewrite(
+                &current.transform_claude_model,
+                &system_prompt,
+                selection.trim(),
+            ))
+            .map_err(|(state, e)| (Some(state), e)),
             TransformEngine::Ollama => tauri::async_runtime::block_on(ollama_chat_autostart(
                 &current.transform_ollama_model,
                 &system_prompt,
                 selection.trim(),
-            )),
+            ))
+            .map_err(|e| (None, e)),
         };
 
         match outcome {
@@ -958,7 +1169,16 @@ mod platform {
                 }
                 None => warn!("Transform selection: model returned empty text, doing nothing"),
             },
-            Err(e) => error!("Transform selection: {engine:?} failed: {e}"),
+            Err((notice, e)) => {
+                error!("Transform selection: {engine:?} failed: {e}");
+                // Show the notice only if the rewriting overlay is still ours.
+                if let Some(state) = notice {
+                    if overlay::overlay_show_generation() == overlay_generation {
+                        overlay_generation = overlay::show_rewrite_failed_overlay(app, state);
+                        std::thread::sleep(REWRITE_FAILED_NOTICE);
+                    }
+                }
+            }
         }
 
         // Only hide the overlay if nobody (e.g. a dictation) showed it meanwhile.
@@ -1095,6 +1315,23 @@ mod tests {
         assert_eq!(
             serde_json::to_string(&TransformStyle::MyVoice).unwrap(),
             "\"my_voice\""
+        );
+    }
+
+    #[test]
+    fn claude_failures_map_to_overlay_notices() {
+        use crate::llm_client::ClaudeError;
+        assert_eq!(
+            claude_failure_overlay_state(&ClaudeError::Offline("dns".into())),
+            "rewrite_offline"
+        );
+        assert_eq!(
+            claude_failure_overlay_state(&ClaudeError::KeyRejected),
+            "rewrite_key"
+        );
+        assert_eq!(
+            claude_failure_overlay_state(&ClaudeError::Other("500".into())),
+            "rewrite_failed"
         );
     }
 
@@ -1298,5 +1535,31 @@ mod tests {
             Duration::from_millis(5),
         );
         assert_eq!(result, None);
+    }
+
+    #[test]
+    fn claude_engine_serde_and_model_validation() {
+        assert_eq!(
+            serde_json::to_string(&TransformEngine::Claude).unwrap(),
+            "\"claude\""
+        );
+        assert_eq!(default_claude_model(), "claude-haiku-5-5");
+        assert!(is_valid_claude_model("claude-sonnet-5-5"));
+        assert!(!is_valid_claude_model("gpt-4"));
+    }
+
+    #[test]
+    fn claude_status_mapping_and_key_masking() {
+        assert_eq!(claude_status_from_check(Ok(())), ClaudeStatus::Ready);
+        assert_eq!(
+            claude_status_from_check(Err(ClaudeError::KeyRejected)),
+            ClaudeStatus::KeyRejected
+        );
+        assert_eq!(
+            claude_status_from_check(Err(ClaudeError::Offline("x".into()))),
+            ClaudeStatus::Offline
+        );
+        assert_eq!(key_last4("sk-ant-abcdef1234").as_deref(), Some("1234"));
+        assert_eq!(key_last4("abc"), None);
     }
 }

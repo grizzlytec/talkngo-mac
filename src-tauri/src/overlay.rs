@@ -636,13 +636,24 @@ pub fn show_processing_overlay(app_handle: &AppHandle) {
 /// produced, so the caller can later tell whether another session took over.
 /// Must not be called from the main thread's event handlers that hold locks.
 pub fn show_rewriting_overlay(app_handle: &AppHandle) -> u64 {
+    show_overlay_state_blocking(app_handle, "rewriting")
+}
+
+/// Shows a short "couldn't rewrite" notice for Transform selection and returns
+/// its show generation. `state` is `rewrite_offline`, `rewrite_key` or
+/// `rewrite_failed`. Same blocking rules as [`show_rewriting_overlay`].
+pub fn show_rewrite_failed_overlay(app_handle: &AppHandle, state: &'static str) -> u64 {
+    show_overlay_state_blocking(app_handle, state)
+}
+
+fn show_overlay_state_blocking(app_handle: &AppHandle, state: &'static str) -> u64 {
     if settings::get_settings(app_handle).overlay_style == OverlayStyle::None {
         return overlay_show_generation();
     }
     let (tx, rx) = std::sync::mpsc::sync_channel(1);
     let handle = app_handle.clone();
     let queued = app_handle.run_on_main_thread(move || {
-        show_overlay_state_on_main(&handle, "rewriting");
+        show_overlay_state_on_main(&handle, state);
         let _ = tx.send(overlay_show_generation());
     });
     match queued {

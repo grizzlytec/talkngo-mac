@@ -569,6 +569,9 @@ pub struct AppSettings {
     /// Ollama model used when the engine is Ollama.
     #[serde(default = "crate::transform::default_ollama_model")]
     pub transform_ollama_model: String,
+    /// Claude model used when the engine is Claude.
+    #[serde(default = "crate::transform::default_claude_model")]
+    pub transform_claude_model: String,
     /// Custom file for the "My voice" guide (e.g. in Google Drive for desktop).
     /// `None` = `voice_guide.md` in the app data dir.
     #[serde(default)]
@@ -1106,6 +1109,7 @@ pub fn get_default_settings() -> AppSettings {
         transform_style: crate::transform::TransformStyle::default(),
         transform_engine: crate::transform::TransformEngine::default(),
         transform_ollama_model: crate::transform::default_ollama_model(),
+        transform_claude_model: crate::transform::default_claude_model(),
         voice_guide_path: None,
         voice_source: None,
         voice_mcp_url: None,

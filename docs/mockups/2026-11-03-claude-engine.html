@@ -1,0 +1,276 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>TalknGo — Claude engine (mockups)</title>
+    <style>
+      :root {
+        --text: #0f0f0f;
+        --bg: #fbfbfb;
+        --green: #00e85a;
+        --accent: #008632;
+        --line: #e4e4e1;
+        --muted: #6b6b66;
+        --wash: #eafff1;
+        --card: #fff;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        background: #ecece8;
+        font:
+          14px/1.45 -apple-system,
+          system-ui,
+          sans-serif;
+        color: var(--text);
+        padding: 32px;
+      }
+      h1 {
+        font:
+          600 22px ui-rounded,
+          "SF Pro Rounded",
+          system-ui;
+        margin: 0 0 4px;
+      }
+      .lead {
+        color: var(--muted);
+        margin: 0 0 28px;
+      }
+      .row {
+        display: flex;
+        gap: 28px;
+        flex-wrap: wrap;
+        align-items: flex-start;
+      }
+      .shot {
+        width: 560px;
+      }
+      .cap {
+        font-weight: 600;
+        margin: 0 0 4px;
+      }
+      .capsub {
+        color: var(--muted);
+        margin: 0 0 10px;
+        font-size: 13px;
+      }
+      .win {
+        background: var(--bg);
+        border-radius: 12px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.12);
+        overflow: hidden;
+        display: flex;
+        min-height: 420px;
+      }
+      .side {
+        width: 132px;
+        background: #f3f3f0;
+        border-right: 1px solid var(--line);
+        padding: 14px 8px;
+        font-size: 13px;
+      }
+      .side div {
+        padding: 6px 10px;
+        border-radius: 7px;
+        color: #3a3a37;
+      }
+      .side .on {
+        background: var(--wash);
+        color: var(--accent);
+        font-weight: 600;
+      }
+      .main {
+        flex: 1;
+        padding: 18px 20px;
+      }
+      .title {
+        font:
+          600 20px ui-rounded,
+          "SF Pro Rounded",
+          system-ui;
+        margin: 0 0 14px;
+      }
+      .group {
+        background: var(--card);
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        padding: 14px;
+      }
+      .gl {
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        color: var(--muted);
+        margin: 0 0 8px;
+      }
+      .opts {
+        display: grid;
+        grid-template-columns: 1fr 1fr 1fr;
+        gap: 8px;
+        margin-bottom: 12px;
+      }
+      .opt {
+        border: 1px solid var(--line);
+        border-radius: 9px;
+        padding: 9px 10px;
+        font-size: 13px;
+        display: flex;
+        gap: 8px;
+        align-items: flex-start;
+      }
+      .opt b {
+        display: block;
+        font-size: 13px;
+      }
+      .opt span {
+        color: var(--muted);
+        font-size: 12px;
+      }
+      .opt.sel {
+        border-color: var(--green);
+        background: var(--wash);
+        box-shadow: 0 0 0 1px var(--green) inset;
+      }
+      .dot {
+        width: 14px;
+        height: 14px;
+        border-radius: 50%;
+        border: 1.5px solid #b9b9b3;
+        flex: none;
+        margin-top: 2px;
+      }
+      .sel .dot {
+        border: 4px solid var(--green);
+      }
+      .field {
+        display: flex;
+        gap: 8px;
+        margin: 6px 0 10px;
+      }
+      input {
+        flex: 1;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        padding: 8px 10px;
+        font: inherit;
+        background: #fff;
+      }
+      .btn {
+        border: none;
+        border-radius: 8px;
+        padding: 8px 14px;
+        font: 600 13px system-ui;
+        background: var(--green);
+        color: #002a10;
+        white-space: nowrap;
+      }
+      .btn.sec {
+        background: #efefeb;
+        color: var(--text);
+        font-weight: 500;
+      }
+      .status {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        border: 1px solid var(--line);
+        border-radius: 9px;
+        padding: 10px 12px;
+        margin-top: 4px;
+      }
+      .ok {
+        width: 9px;
+        height: 9px;
+        border-radius: 50%;
+        background: var(--green);
+        flex: none;
+      }
+      .status small {
+        display: block;
+        color: var(--muted);
+      }
+      .grow {
+        flex: 1;
+      }
+      .hint {
+        color: var(--muted);
+        font-size: 12px;
+        margin: 4px 0 0;
+      }
+      select {
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        padding: 7px 9px;
+        font: inherit;
+        background: #fff;
+        width: 100%;
+      }
+      label.l {
+        font-size: 12px;
+        color: var(--muted);
+      }
+    </style>
+    <style>
+      .seg{display:flex;gap:4px;margin:4px 0 6px}
+      .seg span{border:1px solid var(--line);border-radius:8px;padding:6px 10px;font-size:13px;background:#efefeb}
+      .seg span.on{background:var(--wash);border-color:var(--green);color:var(--accent);font-weight:600}
+      .row2{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:10px 0;border-top:1px solid var(--line)}
+      .row2:first-of-type{border-top:none}
+      .row2 .t b{display:block;font-size:13px}
+      .row2 .t span{color:var(--muted);font-size:12px}
+      .st{font-size:13px;font-weight:600;display:flex;align-items:center;gap:6px;white-space:nowrap}
+      .st i{width:8px;height:8px;border-radius:50%;background:currentColor;display:inline-block}
+      .green{color:#16a34a}.red{color:#dc2626}.grey{color:var(--muted)}
+      .overlay{margin:18px auto 0;width:300px;background:#1c1c1c;color:#fff;border-radius:14px;padding:12px 14px;font-size:13px;display:flex;gap:10px;align-items:center}
+      .overlay i{width:9px;height:9px;border-radius:50%;background:#f87171;flex:none}
+    </style>
+  </head>
+  <body>
+    <h1>TalknGo — reescribir con Claude</h1>
+    <p class="lead">Bocetos. Ajustes → Transform → Engine. Ollama y Apple Intelligence siguen igual; Claude es una tercera opción.</p>
+    <div class="row">
+      <div class="shot"><p class="cap">1 · Eliges Claude por primera vez</p><p class="capsub">Pegas tu clave una vez y escoges modelo. Haiku viene elegido.</p>
+        <div class="win" style="min-height:380px">
+          <div class="side"><div>General</div><div>Models</div><div class="on">Transform</div><div>Advanced</div><div>History</div></div>
+          <div class="main"><p class="title">Transform</p><div class="group"><p class="gl">Transform selection</p>
+            <div class="row2"><div class="t"><b>Engine</b><span>Ollama and Apple Intelligence run on your Mac. Claude uses the internet.</span>
+              <div class="seg"><span>Ollama (local)</span><span>Apple Intelligence</span><span class="on">Claude (internet)</span></div></div><span class="st grey"><i></i>No API key</span></div>
+            <div class="row2"><div class="t" style="flex:1"><b>Anthropic API key</b><span>Saved in your Mac's keychain. Get one at console.anthropic.com.</span>
+              <div class="field"><input placeholder="Paste your API key (sk-ant-…)" /><button class="btn">Save</button></div></div></div>
+            <div class="row2"><div class="t"><b>Model</b><span>Haiku is fast and costs about $0.30 per 1,000 rewrites. Sonnet writes a bit better, about $6 per 1,000.</span></div>
+              <select style="width:170px"><option>Claude Haiku 5.5</option></select></div>
+            <p class="hint">The text you select is sent to Anthropic to rewrite it. Nothing else leaves your Mac.</p>
+          </div></div>
+        </div>
+      </div>
+      <div class="shot"><p class="cap">2 · Listo</p><p class="capsub">La clave queda en el llavero del Mac; solo se ven los últimos 4 caracteres.</p>
+        <div class="win" style="min-height:380px">
+          <div class="side"><div>General</div><div>Models</div><div class="on">Transform</div><div>Advanced</div><div>History</div></div>
+          <div class="main"><p class="title">Transform</p><div class="group"><p class="gl">Transform selection</p>
+            <div class="row2"><div class="t"><b>Engine</b><span>Ollama and Apple Intelligence run on your Mac. Claude uses the internet.</span>
+              <div class="seg"><span>Ollama (local)</span><span>Apple Intelligence</span><span class="on">Claude (internet)</span></div></div><span class="st green"><i></i>Ready</span></div>
+            <div class="row2"><div class="t" style="flex:1"><b>Anthropic API key</b><span>Saved in your Mac's keychain.</span>
+              <div class="field"><input value="sk-ant-••••••••••••3f9a" readonly /><button class="btn sec">Remove</button></div></div></div>
+            <div class="row2"><div class="t"><b>Model</b><span>Haiku is fast and costs about $0.30 per 1,000 rewrites. Sonnet writes a bit better, about $6 per 1,000.</span></div>
+              <select style="width:170px"><option>Claude Haiku 5.5</option></select></div>
+            <p class="hint">The text you select is sent to Anthropic to rewrite it. Nothing else leaves your Mac.</p>
+          </div></div>
+        </div>
+      </div>
+      <div class="shot"><p class="cap">3 · Si algo falla</p><p class="capsub">Clave inválida en Ajustes. Sin internet: aviso en la burbuja, tu texto no se toca.</p>
+        <div class="win" style="min-height:300px">
+          <div class="side"><div>General</div><div>Models</div><div class="on">Transform</div><div>Advanced</div><div>History</div></div>
+          <div class="main"><p class="title">Transform</p><div class="group"><p class="gl">Transform selection</p>
+            <div class="row2"><div class="t"><b>Engine</b><span>Ollama and Apple Intelligence run on your Mac. Claude uses the internet.</span>
+              <div class="seg"><span>Ollama (local)</span><span>Apple Intelligence</span><span class="on">Claude (internet)</span></div></div><span class="st red"><i></i>Key rejected</span></div>
+            <div class="row2"><div class="t" style="flex:1"><b>Anthropic API key</b><span>Anthropic did not accept this key. Paste a new one.</span>
+              <div class="field"><input placeholder="Paste your API key (sk-ant-…)" /><button class="btn">Save</button></div></div></div>
+          </div></div>
+        </div>
+        <div class="overlay"><i></i>No internet — text left as it was</div>
+      </div>
+    </div>
+  </body>
+</html>

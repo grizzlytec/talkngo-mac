@@ -664,6 +664,41 @@ async changeTransformOllamaModelSetting(model: string) : Promise<Result<null, st
     else return { status: "error", error: e  as any };
 }
 },
+async changeTransformClaudeModelSetting(model: string) : Promise<Result<null, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("change_transform_claude_model_setting", { model }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+async saveClaudeApiKey(key: string) : Promise<Result<null, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("save_claude_api_key", { key }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+async removeClaudeApiKey() : Promise<Result<null, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("remove_claude_api_key") };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+async claudeKeyStatus() : Promise<Result<ClaudeKeyStatus, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("claude_key_status") };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+async checkClaudeStatus() : Promise<ClaudeStatus> {
+    return await TAURI_INVOKE("check_claude_status");
+},
 async changeTransformVoiceGuidePathSetting(path: string | null) : Promise<Result<null, string>> {
     try {
     return { status: "ok", data: await TAURI_INVOKE("change_transform_voice_guide_path_setting", { path }) };
@@ -1276,6 +1311,10 @@ transform_engine?: TransformEngine;
  */
 transform_ollama_model?: string; 
 /**
+ * Claude model used when the engine is Claude.
+ */
+transform_claude_model?: string; 
+/**
  * Custom file for the "My voice" guide (e.g. in Google Drive for desktop).
  * `None` = `voice_guide.md` in the app data dir.
  */
@@ -1646,13 +1685,19 @@ export type TranscriptionOutcome =
 /**
  * Which local engine rewrites the text.
  */
-export type TransformEngine = "ollama" | "apple_intelligence"
+export type TransformEngine = "ollama" | "apple_intelligence" | "claude"
 /**
  * Rewrite styles with their fixed rewrite instructions.
  */
 export type SourceStatus = { server_name: string | null; guide_version: number | null; synced_at: number | null; error: string | null; needs_sign_in: boolean }
 export type VoiceSource = "built_in" | "file" | "mcp"
 export type TransformStyle = "correct_grammar" | "formal" | "friendlier" | "clearer" | "shorter" | "my_voice"
+export type ClaudeKeyStatus = { saved: boolean; 
+/**
+ * Last four characters of the saved key (never the whole key).
+ */
+last4: string | null }
+export type ClaudeStatus = "ready" | "no_key" | "key_rejected" | "offline"
 export type OllamaStatus = "ready" | "not_running" | "model_missing"
 export type TypingTool = "auto" | "wtype" | "kwtype" | "dotool" | "ydotool" | "xdotool"
 export type VadBackend = "silero" | "earshot"

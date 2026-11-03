@@ -187,6 +187,8 @@ const settingUpdaters: {
     commands.changeTransformEngineSetting(value as TransformEngine),
   transform_ollama_model: (value) =>
     commands.changeTransformOllamaModelSetting(value as string),
+  transform_claude_model: (value) =>
+    commands.changeTransformClaudeModelSetting(value as string),
   voice_guide_path: (value) =>
     commands.changeTransformVoiceGuidePathSetting(
       (value as string | null) ?? null,

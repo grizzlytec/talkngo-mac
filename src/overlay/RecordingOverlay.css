@@ -407,3 +407,12 @@
   overflow: hidden;
   text-overflow: ellipsis;
 }
+
+/* Transform selection failure notice: red dot in place of the spinner. */
+.sfail-dot {
+  display: inline-block;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: #f87171;
+}

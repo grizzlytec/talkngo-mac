@@ -914,7 +914,11 @@
         "ready": "Ready",
         "unavailable": "Not available",
         "notRunning": "Not running",
-        "modelMissing": "Model not downloaded"
+        "modelMissing": "Model not downloaded",
+        "claude": "Claude (internet)",
+        "noKey": "No API key",
+        "keyRejected": "Key rejected",
+        "offline": "Offline"
       },
       "style": {
         "title": "Style",
@@ -1002,6 +1006,23 @@
         "wordsFile": "Words file (optional)",
         "noFile": "No file chosen",
         "clear": "Clear"
+      },
+      "claude": {
+        "apiKey": {
+          "title": "Anthropic API key",
+          "placeholder": "Paste your API key (sk-ant-…)",
+          "save": "Save",
+          "remove": "Remove",
+          "hint": "Saved in your Mac's keychain. Get one at console.anthropic.com.",
+          "saveFailed": "Could not save the key: {{error}}"
+        },
+        "model": {
+          "title": "Model",
+          "description": "Haiku is fast and costs about $0.30 per 1,000 rewrites. Sonnet writes a bit better, about $6 per 1,000.",
+          "haiku": "Claude Haiku 5.5",
+          "sonnet": "Claude Sonnet 5.5"
+        },
+        "privacy": "The text you select is sent to Anthropic to rewrite it. Nothing else leaves your Mac."
       }
     }
   },
@@ -1067,7 +1088,10 @@
     "transcribing": "ट्रांसक्राइब हो रहा है...",
     "processing": "प्रोसेस हो रहा है...",
     "loadingModel": "मॉडल लोड हो रहा है...",
-    "rewriting": "Rewriting..."
+    "rewriting": "Rewriting...",
+    "rewriteOffline": "No internet — text left as it was",
+    "rewriteKey": "Check your API key — text left as it was",
+    "rewriteFailed": "Couldn't rewrite — text left as it was"
   },
   "secureInput": {
     "blockedWithCulprit_one": "{{name}} शायद 1 शॉर्टकट को ब्लॉक कर रहा है",

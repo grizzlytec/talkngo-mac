@@ -47,3 +47,6 @@ result
 __pycache__/
 TEMP/
 .superpowers/
+
+# Local secrets
+.env.local

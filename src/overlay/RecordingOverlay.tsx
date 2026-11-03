@@ -18,7 +18,16 @@ type OverlayState =
   | "streaming"
   | "transcribing"
   | "processing"
-  | "rewriting";
+  | "rewriting"
+  | "rewrite_offline"
+  | "rewrite_key"
+  | "rewrite_failed";
+
+const REWRITE_FAILED_LABEL_KEY: Partial<Record<OverlayState, string>> = {
+  rewrite_offline: "overlay.rewriteOffline",
+  rewrite_key: "overlay.rewriteKey",
+  rewrite_failed: "overlay.rewriteFailed",
+};
 
 // Number of reactive bars in the waveform (the simple, smoothed style shared by
 // every overlay form). Mic levels arrive as 16 FFT buckets; we take the first N.
@@ -353,6 +362,28 @@ const RecordingOverlay: React.FC = () => {
   // ---- Minimal overlay: exactly one row at a time — waveform (recording), or a
   // spinner + label (transcribing / processing). Never both. The pill animates its
   // width between them; the cancel button is in both rows so it stays put.
+  const failedLabelKey = REWRITE_FAILED_LABEL_KEY[state];
+  if (failedLabelKey) {
+    return (
+      <div
+        dir={direction}
+        className={`ov-stage ${position} ov-fade ${isVisible ? "show" : ""}`}
+      >
+        <div className="scard compact">
+          <div className="sbase">
+            <div className="sbase-l">
+              <span className="sfail-dot" aria-hidden="true" />
+            </div>
+            <span className="swork-label" role="status">
+              {t(failedLabelKey)}
+            </span>
+            <div className="sbase-r" />
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   const working =
     state === "transcribing" || state === "processing" || state === "rewriting";
   const workLabel =

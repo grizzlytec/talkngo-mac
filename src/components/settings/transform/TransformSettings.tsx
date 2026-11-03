@@ -1,13 +1,20 @@
 import React, { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { commands } from "@/bindings";
-import type { OllamaStatus, TransformEngine, TransformStyle } from "@/bindings";
+import type {
+  ClaudeKeyStatus,
+  ClaudeStatus,
+  OllamaStatus,
+  TransformEngine,
+  TransformStyle,
+} from "@/bindings";
 import { useSettings } from "../../../hooks/useSettings";
 import { SettingsGroup } from "../../ui/SettingsGroup";
 import { SettingContainer } from "../../ui/SettingContainer";
 import { Radio } from "../../ui/Radio";
 import { Button } from "../../ui/Button";
 import { Input } from "../../ui/Input";
+import { Dropdown } from "../../ui/Dropdown";
 import { ShortcutInput } from "../ShortcutInput";
 import { VoiceSourceSettings } from "./VoiceSourceSettings";
 
@@ -26,16 +33,28 @@ const ENGINES: { id: TransformEngine; labelKey: string }[] = [
     id: "apple_intelligence",
     labelKey: "settings.transform.engine.appleIntelligence",
   },
+  { id: "claude", labelKey: "settings.transform.engine.claude" },
 ];
 
 const DEFAULT_OLLAMA_MODEL = "qwen2.5:7b";
+const DEFAULT_CLAUDE_MODEL = "claude-haiku-5-5";
 
 type EngineStatus =
   | "checking"
   | "ready"
   | "unavailable"
   | "notRunning"
-  | "modelMissing";
+  | "modelMissing"
+  | "noKey"
+  | "keyRejected"
+  | "offline";
+
+const CLAUDE_STATUS_KEY: Record<ClaudeStatus, EngineStatus> = {
+  ready: "ready",
+  no_key: "noKey",
+  key_rejected: "keyRejected",
+  offline: "offline",
+};
 
 const OLLAMA_STATUS_KEY: Record<OllamaStatus, EngineStatus> = {
   ready: "ready",
@@ -56,6 +75,43 @@ export const TransformSettings: React.FC = () => {
   const savedModel = (getSetting("transform_ollama_model") ??
     DEFAULT_OLLAMA_MODEL) as string;
   const [modelDraft, setModelDraft] = useState(savedModel);
+  const claudeModel = (getSetting("transform_claude_model") ??
+    DEFAULT_CLAUDE_MODEL) as string;
+  const [keyStatus, setKeyStatus] = useState<ClaudeKeyStatus>({
+    saved: false,
+    last4: null,
+  });
+  const [keyDraft, setKeyDraft] = useState("");
+  const [keyError, setKeyError] = useState<string | null>(null);
+  const [keyVersion, setKeyVersion] = useState(0);
+
+  useEffect(() => {
+    commands
+      .claudeKeyStatus()
+      .then((result) => {
+        if (result.status === "ok") setKeyStatus(result.data);
+      })
+      .catch(() => undefined);
+  }, [keyVersion]);
+
+  const saveKey = async () => {
+    const key = keyDraft.trim();
+    if (!key) return;
+    const result = await commands.saveClaudeApiKey(key);
+    if (result.status === "ok") {
+      setKeyDraft("");
+      setKeyError(null);
+      setKeyVersion((v) => v + 1);
+    } else {
+      setKeyError(result.error);
+    }
+  };
+
+  const removeKey = async () => {
+    const result = await commands.removeClaudeApiKey();
+    setKeyError(result.status === "error" ? result.error : null);
+    setKeyVersion((v) => v + 1);
+  };
 
   useEffect(() => {
     setModelDraft(savedModel);
@@ -65,28 +121,38 @@ export const TransformSettings: React.FC = () => {
     let cancelled = false;
     setStatus("checking");
     const check =
-      engineSetting === "ollama"
+      engineSetting === "claude"
         ? commands
-            .checkOllamaStatus(savedModel)
-            .then((result) => OLLAMA_STATUS_KEY[result])
-        : commands
-            .checkAppleIntelligenceAvailable()
-            .then(
-              (available): EngineStatus =>
-                available ? "ready" : "unavailable",
-            );
+            .checkClaudeStatus()
+            .then((result) => CLAUDE_STATUS_KEY[result])
+        : engineSetting === "ollama"
+          ? commands
+              .checkOllamaStatus(savedModel)
+              .then((result) => OLLAMA_STATUS_KEY[result])
+          : commands
+              .checkAppleIntelligenceAvailable()
+              .then(
+                (available): EngineStatus =>
+                  available ? "ready" : "unavailable",
+              );
     check
       .then((result) => {
         if (!cancelled) setStatus(result);
       })
       .catch(() => {
         if (!cancelled)
-          setStatus(engineSetting === "ollama" ? "notRunning" : "unavailable");
+          setStatus(
+            engineSetting === "claude"
+              ? "offline"
+              : engineSetting === "ollama"
+                ? "notRunning"
+                : "unavailable",
+          );
       });
     return () => {
       cancelled = true;
     };
-  }, [engineSetting, savedModel]);
+  }, [engineSetting, savedModel, keyVersion]);
 
   useEffect(() => {
     commands
@@ -166,7 +232,7 @@ export const TransformSettings: React.FC = () => {
               ))}
             </div>
             <span
-              className={`flex items-center gap-1.5 text-sm font-medium ${engineColor}`}
+              className={`flex shrink-0 items-center gap-1.5 whitespace-nowrap text-sm font-medium ${engineColor}`}
             >
               <span
                 aria-hidden="true"
@@ -198,6 +264,100 @@ export const TransformSettings: React.FC = () => {
               className="w-48"
             />
           </SettingContainer>
+        )}
+        {engineSetting === "claude" && (
+          <>
+            <SettingContainer
+              title={t("settings.transform.claude.apiKey.title")}
+              description={t("settings.transform.claude.apiKey.hint")}
+              descriptionMode="inline"
+              grouped={true}
+            >
+              <div className="flex flex-col items-end gap-1">
+                {keyStatus.saved ? (
+                  <div className="flex items-center gap-2">
+                    <Input
+                      variant="compact"
+                      type="text"
+                      readOnly
+                      value={`sk-ant-••••••••${keyStatus.last4 ?? ""}`}
+                      className="w-56"
+                    />
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      size="sm"
+                      onClick={removeKey}
+                    >
+                      {t("settings.transform.claude.apiKey.remove")}
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-2">
+                    <Input
+                      variant="compact"
+                      type="password"
+                      value={keyDraft}
+                      placeholder={t(
+                        "settings.transform.claude.apiKey.placeholder",
+                      )}
+                      spellCheck={false}
+                      autoCapitalize="off"
+                      autoCorrect="off"
+                      onChange={(e) => setKeyDraft(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") saveKey();
+                      }}
+                      className="w-56"
+                    />
+                    <Button
+                      type="button"
+                      variant="primary"
+                      size="sm"
+                      disabled={!keyDraft.trim()}
+                      onClick={saveKey}
+                    >
+                      {t("settings.transform.claude.apiKey.save")}
+                    </Button>
+                  </div>
+                )}
+                {keyError && (
+                  <span className="text-sm text-red-600" role="alert">
+                    {t("settings.transform.claude.apiKey.saveFailed", {
+                      error: keyError,
+                    })}
+                  </span>
+                )}
+              </div>
+            </SettingContainer>
+            <SettingContainer
+              title={t("settings.transform.claude.model.title")}
+              description={t("settings.transform.claude.model.description")}
+              descriptionMode="inline"
+              grouped={true}
+            >
+              <Dropdown
+                selectedValue={claudeModel}
+                disabled={isUpdating("transform_claude_model")}
+                onSelect={(value) =>
+                  updateSetting("transform_claude_model", value)
+                }
+                options={[
+                  {
+                    value: "claude-haiku-5-5",
+                    label: t("settings.transform.claude.model.haiku"),
+                  },
+                  {
+                    value: "claude-sonnet-5-5",
+                    label: t("settings.transform.claude.model.sonnet"),
+                  },
+                ]}
+              />
+            </SettingContainer>
+            <p className="px-4 pb-2 text-sm text-ink-3">
+              {t("settings.transform.claude.privacy")}
+            </p>
+          </>
         )}
       </SettingsGroup>
       <SettingsGroup title={t("settings.transform.style.title")}>
