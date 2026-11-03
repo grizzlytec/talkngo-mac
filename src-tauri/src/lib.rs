@@ -193,6 +193,7 @@ fn should_force_show_permissions_window(app: &AppHandle) -> bool {
 
 fn initialize_core_logic(app_handle: &AppHandle) {
     voice_sync::start_background_sync(app_handle);
+    voice_source::start(app_handle);
     transform::kick_ollama_if_needed(app_handle);
     // Note: Enigo (keyboard/mouse simulation) is NOT initialized here.
     // The frontend is responsible for calling the `initialize_enigo` command
@@ -750,6 +751,11 @@ pub fn run(cli_args: CliArgs) {
             transform::change_voice_mcp_tools_setting,
             voice_sync::sync_voice_guide,
             voice_sync::voice_sync_configured,
+            voice_source::voice_source_connect,
+            voice_source::voice_source_disconnect,
+            voice_source::voice_source_sync,
+            voice_source::voice_source_status,
+            voice_source::voice_source_tools,
             shortcut::get_available_accelerators,
             shortcut::handy_keys::start_handy_keys_recording,
             shortcut::handy_keys::stop_handy_keys_recording,

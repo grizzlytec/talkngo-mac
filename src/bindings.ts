@@ -723,6 +723,41 @@ async syncVoiceGuide() : Promise<Result<number, string>> {
     else return { status: "error", error: e  as any };
 }
 },
+async voiceSourceConnect(url: string) : Promise<Result<SourceStatus, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("voice_source_connect", { url }) };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+async voiceSourceDisconnect() : Promise<Result<null, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("voice_source_disconnect") };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+async voiceSourceSync() : Promise<Result<SourceStatus, string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("voice_source_sync") };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
+async voiceSourceStatus() : Promise<SourceStatus> {
+    return await TAURI_INVOKE("voice_source_status");
+},
+async voiceSourceTools() : Promise<Result<McpTool[], string>> {
+    try {
+    return { status: "ok", data: await TAURI_INVOKE("voice_source_tools") };
+} catch (e) {
+    if(e instanceof Error) throw e;
+    else return { status: "error", error: e  as any };
+}
+},
 /**
  * Checks the local Ollama server (`GET /api/tags`) for the given model.
  */
@@ -1392,6 +1427,11 @@ export type LanguageStatus =
  */
 { kind: "auto_unavailable"; language: string; reason: AutoUnavailableReason }
 export type LogLevel = "trace" | "debug" | "info" | "warn" | "error"
+export type McpTool = { name: string; description: string; 
+/**
+ * Number of required arguments (tools we can call need 0).
+ */
+required_args: number }
 export type ModelInfo = { id: string; name: string; description: string; filename: string; source: ModelSource; size_mb: number; is_downloaded: boolean; is_downloading: boolean; partial_size: number; accuracy_score: number; speed_score: number; supports_translation: boolean; is_recommended: boolean; supported_languages: string[]; supports_language_selection: boolean; is_custom: boolean; supports_streaming: boolean; supports_language_detection: boolean }
 export type ModelLoadStatus = { is_loaded: boolean; current_model: string | null }
 /**
@@ -1610,6 +1650,7 @@ export type TransformEngine = "ollama" | "apple_intelligence"
 /**
  * Rewrite styles with their fixed rewrite instructions.
  */
+export type SourceStatus = { server_name: string | null; guide_version: number | null; synced_at: number | null; error: string | null; needs_sign_in: boolean }
 export type VoiceSource = "built_in" | "file" | "mcp"
 export type TransformStyle = "correct_grammar" | "formal" | "friendlier" | "clearer" | "shorter" | "my_voice"
 export type OllamaStatus = "ready" | "not_running" | "model_missing"

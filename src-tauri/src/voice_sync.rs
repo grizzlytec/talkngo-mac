@@ -69,6 +69,9 @@ fn read_config(dir: &Path) -> Option<Result<SyncConfig, String>> {
 #[tauri::command]
 #[specta::specta]
 pub fn voice_sync_configured(app: AppHandle) -> bool {
+    if !crate::voice_source::legacy_sync_enabled(&crate::settings::get_settings(&app)) {
+        return false;
+    }
     let Ok(path) = crate::transform::voice_guide_path(&app) else {
         return false;
     };
@@ -79,6 +82,10 @@ pub fn voice_sync_configured(app: AppHandle) -> bool {
 
 /// Downloads the guide and caches it. `Ok(None)` means sync is not configured.
 async fn sync_once(app: &AppHandle) -> Result<Option<i64>, String> {
+    // A chosen voice source (see `voice_source`) replaces this legacy sync.
+    if !crate::voice_source::legacy_sync_enabled(&crate::settings::get_settings(app)) {
+        return Ok(None);
+    }
     let guide_path = crate::transform::voice_guide_path(app)?;
     let dir = guide_path.parent().ok_or("no app data dir")?;
     let Some(config) = read_config(dir) else {

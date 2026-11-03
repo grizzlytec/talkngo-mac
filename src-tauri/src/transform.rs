@@ -174,6 +174,7 @@ fn check_guide_extension(path: &std::path::Path) -> Result<(), String> {
 
 /// The file "My voice" reads: the custom path when set (non-blank), else the
 /// default `voice_guide.md` in the app data dir.
+#[cfg(test)]
 fn select_guide_path(custom: Option<&str>, default: std::path::PathBuf) -> std::path::PathBuf {
     match custom.map(str::trim).filter(|p| !p.is_empty()) {
         Some(path) => std::path::PathBuf::from(path),
@@ -185,8 +186,7 @@ fn select_guide_path(custom: Option<&str>, default: std::path::PathBuf) -> std::
 /// only the default app-data `voice_guide.md`; with a custom path set, sync
 /// still runs but "My voice" reads the custom file.
 fn active_voice_guide_path(app: &AppHandle) -> Result<std::path::PathBuf, String> {
-    let custom = settings::get_settings(app).voice_guide_path;
-    Ok(select_guide_path(custom.as_deref(), voice_guide_path(app)?))
+    crate::voice_source::guide_path(app)
 }
 
 /// Reads the active voice guide (at each use, so edits apply immediately).
