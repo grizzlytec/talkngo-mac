@@ -42,9 +42,11 @@
 ### Task 1 (A1): Storage for voice clients and vocabulary
 
 **Files:**
+
 - Create: `supabase/migrations/20261103120000_voice_clients_and_vocabulary.sql`
 
 Tables in schema `kodiak`:
+
 - `voice_clients(id uuid pk default gen_random_uuid(), label text not null, created_at timestamptz not null default now(), last_used_at timestamptz, revoked_at timestamptz)`
 - `dictation_vocabulary(id smallint pk default 1 check (id = 1), words text[] not null default '{}', updated_at timestamptz not null default now())` + insert the single row seeded from `TalknGo/vocabulary.txt` (one entry per non-empty line, in `/Volumes/Internal/Software Development/anvilagents/TalknGo/vocabulary.txt`).
 - Both: `enable row level security`; `revoke all ... from public, anon, authenticated, service_role`; `grant select, insert, update on kodiak.voice_clients to service_role`; `grant select, update on kodiak.dictation_vocabulary to service_role`. No policies (service role bypasses RLS; nobody else gets access).
@@ -57,14 +59,17 @@ Tables in schema `kodiak`:
 ### Task 2 (A2): OAuth `voice` scope, loopback redirects, client rows
 
 **Files:**
+
 - Modify: `mcp/src/oauth.ts` (metadata :35-47, authorizeGet :155-209, authorizePost :211-266, /token :268-330, refresh :339-370), `mcp/src/tokens.ts` (payload types :65-85), `mcp/src/index.ts` (CSP form-action :56-64)
 - Create: `mcp/src/voice/clients.ts`
 - Test: `mcp/src/__tests__/oauth-voice-scope.test.ts`
 
 **Interfaces:**
+
 - Produces: `type OAuthScope = 'mcp' | 'voice'`; `AccessTokenPayload` / `RefreshTokenPayload` gain optional `vcid?: string` (voice client id). `voice/clients.ts`: `createVoiceClient(label: string): Promise<string>`, `isVoiceClientActive(id: string): Promise<boolean>` (60 s in-memory cache; also bumps `last_used_at` at most once per hour), `listVoiceClients(): Promise<VoiceClient[]>`, `revokeVoiceClient(id: string): Promise<boolean>`, `__resetVoiceClientCacheForTests()`.
 
 Rules:
+
 - `scopes_supported: ['mcp', 'voice']`. Requested scope: absent → `mcp`; contains `voice` and nothing else → `voice`; anything else → 400 `invalid_scope`.
 - Redirect check: scope `mcp` → existing exact allowlist. Scope `voice` → must match `^http://127\.0\.0\.1:\d{1,5}/callback$` (also allowed: exact allowlist). Loopback is never accepted for `mcp`.
 - `scope` travels as a hidden input from authorizeGet to authorizePost and into the code payload (`AuthCodePayload.scope`). The consent page for `voice` says "TalknGo (or another app) wants read-only access to your voice guide and dictation words." Owner passphrase still required.
@@ -87,14 +92,17 @@ Rules:
 ### Task 3 (A3): Voice tools and scope-filtered MCP server
 
 **Files:**
+
 - Modify: `mcp/src/voice/verbs.ts`, `mcp/src/verbs-registry.ts` (VERBS :240, voice block :358), `mcp/src/mcp-server.ts` (`buildMcpServer` :33, loop :61-64), `mcp/src/index.ts` (POST /mcp :111-132), `mcp/src/auth.ts` (`requireBearer` :17-40)
 - Test: `mcp/src/__tests__/voice-scope-tools.test.ts`
 
 **Interfaces:**
+
 - Consumes: `isVoiceClientActive`, `listVoiceClients`, `revokeVoiceClient` (A2); `loadGuide(): Promise<{version:number; body:string; token:string}>` (`voice/guide.ts:148`).
 - Produces: `buildMcpServer(opts?: { scope?: 'mcp' | 'voice' })`; `VOICE_SCOPE_VERBS: ReadonlySet<string> = new Set(['get_voice_guide','get_vocabulary'])`.
 
 Verbs:
+
 - `get_voice_guide` — no args; returns JSON text `{"version": <int>, "guide": "<body>"}`. Read-only.
 - `get_vocabulary` — no args; returns JSON text `{"words": [...]}` from `kodiak.dictation_vocabulary`.
 - `set_vocabulary` — `{ words: string[] }` (max 2000 items, each 1-100 chars, trimmed, de-duped case-insensitively) — full scope only.
@@ -121,9 +129,11 @@ Rules: POST /mcp passes `req.auth.scope` to `buildMcpServer`; with `voice` only 
 ### Task 5 (B1): Source settings
 
 **Files:**
+
 - Modify: `src-tauri/src/settings.rs` (AppSettings ~:563-576, `get_default_settings` ~:1090), `src-tauri/src/transform.rs` (commands next to :213), `src-tauri/src/lib.rs` (collect_commands :740-747), `src/stores/settingsStore.ts` (settingUpdaters :183-191)
 
 **Interfaces:**
+
 - Produces: `enum VoiceSource { BuiltIn, File, Mcp }` (derives like `TransformEngine` at transform.rs:40, `#[serde(rename_all="snake_case")]`) in `transform.rs`. AppSettings fields, all `#[serde(default)]`: `voice_source: Option<VoiceSource>` (None = legacy behavior), `voice_mcp_url: Option<String>`, `voice_mcp_guide_tool: Option<String>`, `voice_mcp_words_tool: Option<String>`, `voice_words_path: Option<String>`. Commands: `change_voice_source_setting(app, source: VoiceSource)`, `change_voice_words_path_setting(app, path: Option<String>)` (same extension check as the guide path), `change_voice_mcp_tools_setting(app, guide: Option<String>, words: Option<String>)`.
 - `fn effective_voice_source(s: &AppSettings) -> VoiceSource`: `Some(x)` → x; None → `File` if `voice_guide_path` is set, else `BuiltIn`.
 
@@ -134,18 +144,22 @@ Rules: POST /mcp passes `req.auth.scope` to `buildMcpServer`; with `voice` only 
 ### Task 6 (B2): Keychain token store
 
 **Files:**
+
 - Create: `src-tauri/src/voice_source/secrets.rs`; add `keyring = { version = "3", features = ["apple-native"] }` under `[target.'cfg(target_os = "macos")'.dependencies]`.
 
 **Interfaces:**
+
 - Produces: `struct StoredTokens { access_token: String, refresh_token: Option<String>, expires_at: Option<i64>, client_id: String, token_endpoint: String }` (serde); `fn save_tokens(server_url: &str, t: &StoredTokens) -> Result<(), String>`, `fn load_tokens(server_url: &str) -> Result<Option<StoredTokens>, String>`, `fn delete_tokens(server_url: &str) -> Result<(), String>`. Keychain service `"TalknGo MCP"`, account = server URL. Non-macOS and `cfg(test)`: process-wide in-memory map.
 - [ ] Steps: test `save_load_delete_roundtrip` (in-memory backend) → fail → implement → pass → commit `feat: keychain storage for MCP tokens`.
 
 ### Task 7 (B3): OAuth client (discovery, DCR, PKCE, loopback)
 
 **Files:**
+
 - Create: `src-tauri/src/voice_source/oauth.rs`; deps: `rand = "0.8"`, `base64 = "0.22"`, `url = "2"` (tokio already present; add features `net`, `io-util`, `time`, `macros` to the main tokio dep).
 
 **Interfaces:**
+
 - Consumes: B2 `save_tokens`.
 - Produces:
   - `struct AuthServer { authorization_endpoint: String, token_endpoint: String, registration_endpoint: Option<String>, scopes_supported: Vec<String> }`
@@ -162,9 +176,11 @@ Rules: POST /mcp passes `req.auth.scope` to `buildMcpServer`; with `voice` only 
 ### Task 8 (B4): Minimal MCP client and tool pick
 
 **Files:**
+
 - Create: `src-tauri/src/voice_source/mcp.rs`
 
 **Interfaces:**
+
 - Consumes: B2, B3 `refresh`.
 - Produces: `struct McpTool { name: String, description: String, required_args: usize }`; `struct McpSession { server_name: String, ... }`; `async fn open(url: &str, token: &str) -> Result<McpSession, McpError>` (`initialize` protocolVersion `"2025-06-18"`, clientInfo `{name:"TalknGo", version}`, then `notifications/initialized`; keeps `Mcp-Session-Id` if returned); `async fn list_tools(&self) -> Result<Vec<McpTool>, McpError>`; `async fn call_text(&self, tool: &str) -> Result<String, McpError>` (joins text content; `isError` → Err); `enum McpError { Unauthorized, Other(String) }` (401 → Unauthorized); `fn parse_rpc_body(content_type: &str, body: &str, id: u64) -> Result<serde_json::Value, String>` handles `application/json` and `text/event-stream` (`data:` lines, picks the message with matching id); `fn pick_tools(tools: &[McpTool]) -> (Option<String>, Option<String>)` → `get_voice_guide` / `get_vocabulary` if present; `fn parse_words(text: &str) -> Vec<String>` accepts `{"words":[...]}`, a JSON array, or one word per line.
 - [ ] Step 1: Failing tests: `parses_sse_response_by_id`; `parses_json_response`; `pick_tools_finds_convention_names`; `pick_tools_none_when_missing`; `parse_words_accepts_object_array_and_lines`; `call_text_error_result_is_err`.
@@ -173,10 +189,12 @@ Rules: POST /mcp passes `req.auth.scope` to `buildMcpServer`; with `voice` only 
 ### Task 9 (B5): Source-aware sync, cache, and word merge
 
 **Files:**
+
 - Create: `src-tauri/src/voice_source/mod.rs` (owns sync), `src-tauri/src/voice_source/cache.rs`
 - Modify: `src-tauri/src/voice_sync.rs` (legacy path only runs when `voice_source` is None), `src-tauri/src/transform.rs` (`active_voice_guide_path` :165, `read_voice_guide` :172), `src-tauri/src/managers/transcription.rs` (:1320 and :1643), `src-tauri/src/lib.rs` (:194 start sync; register commands)
 
 **Interfaces:**
+
 - Consumes: B1-B4.
 - Produces:
   - cache dir `<app data>/voice_source/`: `guide.md`, `words.json` (`["…"]`), `status.json` = `struct SourceStatus { server_name: Option<String>, guide_version: Option<i64>, synced_at: Option<i64>, error: Option<String>, needs_sign_in: bool }` (serde + specta).
@@ -193,13 +211,15 @@ Rules: POST /mcp passes `req.auth.scope` to `buildMcpServer`; with `voice` only 
 ### Task 10 (B6): Settings UI
 
 **Files:**
+
 - Modify: `src/components/settings/transform/TransformSettings.tsx`, `src/i18n/locales/*/translation.json` (24 locales), `src/stores/settingsStore.ts`
 
 Matches mockup `docs/mockups/2026-11-03-voice-sources.html` (three options; no Google Drive). Group title "My voice guide — source"; radiogroup rows (existing hand-made `role="radio"` + `<Radio checked/>` pattern at :169):
+
 - **MCP server** — sub "Your own MCP connection". Not connected: "Server address" Input (placeholder "Paste your MCP server address") + primary Button "Connect" (spinner + "Waiting for sign-in in your browser…" while connecting) + hint "Your browser opens to sign in. TalknGo keeps the access in your Mac's keychain — nothing to copy between Macs." Connected: address read-only + secondary "Disconnect"; status row with green dot "Connected to <server_name>" and "Voice guide v<version> · updated <relative time>"; secondary "Sync now"; if `needs_sign_in`: warning text "Sign in again" + "Connect" button; if `pick_tools` found nothing, two Selects "Voice guide tool" / "Words tool" (options = zero-required-arg tools + "None") saving via `change_voice_mcp_tools_setting`.
 - **File** — sub "A .md or .txt on this computer". "Voice guide file" (path display + "Choose file…") and "Words file (optional)" (same).
 - **Write it here** — sub "Built-in guide". Button "Open voice guide" (existing command).
-Remove the old standalone sync button/legacy controls from view when `voice_source` is set (keep them when None so legacy users see what they have).
+  Remove the old standalone sync button/legacy controls from view when `voice_source` is set (keep them when None so legacy users see what they have).
 
 - [ ] Step 1: Implement; add keys under `settings.transform.voiceSource.*` to `en` and `es` (Spanish), copy English to the other 22 locales.
 - [ ] Step 2: `bun run check:translations && bun run lint && bun run format:check && bun run build` → all pass.
