@@ -39,7 +39,7 @@
 
 ## Part A — Kodiak
 
-### Task A1: Storage for voice clients and vocabulary
+### Task 1 (A1): Storage for voice clients and vocabulary
 
 **Files:**
 - Create: `supabase/migrations/20261103120000_voice_clients_and_vocabulary.sql`
@@ -54,7 +54,7 @@ Tables in schema `kodiak`:
 - [ ] Step 3: Run `rls-reviewer` agent on the migration; fix findings.
 - [ ] Step 4: Commit `feat(db): voice_clients and dictation_vocabulary for TalknGo voice access`.
 
-### Task A2: OAuth `voice` scope, loopback redirects, client rows
+### Task 2 (A2): OAuth `voice` scope, loopback redirects, client rows
 
 **Files:**
 - Modify: `mcp/src/oauth.ts` (metadata :35-47, authorizeGet :155-209, authorizePost :211-266, /token :268-330, refresh :339-370), `mcp/src/tokens.ts` (payload types :65-85), `mcp/src/index.ts` (CSP form-action :56-64)
@@ -84,7 +84,7 @@ Rules:
 - [ ] Step 4: `cd mcp && npm run typecheck && npm test` → all PASS.
 - [ ] Step 5: Commit `feat(mcp): read-only voice OAuth scope with loopback redirects and revocable clients`.
 
-### Task A3: Voice tools and scope-filtered MCP server
+### Task 3 (A3): Voice tools and scope-filtered MCP server
 
 **Files:**
 - Modify: `mcp/src/voice/verbs.ts`, `mcp/src/verbs-registry.ts` (VERBS :240, voice block :358), `mcp/src/mcp-server.ts` (`buildMcpServer` :33, loop :61-64), `mcp/src/index.ts` (POST /mcp :111-132), `mcp/src/auth.ts` (`requireBearer` :17-40)
@@ -109,7 +109,7 @@ Rules: POST /mcp passes `req.auth.scope` to `buildMcpServer`; with `voice` only 
 - [ ] Step 4: `cd mcp && npm run typecheck && npm test` → PASS.
 - [ ] Step 5: Commit `feat(mcp): get_voice_guide/get_vocabulary for voice tokens; vocabulary and voice-client admin verbs`.
 
-### Task A4: Deploy Kodiak and check live
+### Task 4 (A4): Deploy Kodiak and check live
 
 - [ ] Step 1: `git pull --rebase && git push origin main` (pre-push hook runs typecheck + tests; Coolify auto-deploys `mcp/**`). Do not call the Coolify deploy API.
 - [ ] Step 2: Wait (background) until `https://kodiak.grizzlytec.com/health` is OK and `/.well-known/oauth-authorization-server` lists `"voice"` in `scopes_supported`. Use `ctx_execute` fetch (curl is blocked).
@@ -118,7 +118,7 @@ Rules: POST /mcp passes `req.auth.scope` to `buildMcpServer`; with `voice` only 
 
 ## Part B — TalknGo
 
-### Task B1: Source settings
+### Task 5 (B1): Source settings
 
 **Files:**
 - Modify: `src-tauri/src/settings.rs` (AppSettings ~:563-576, `get_default_settings` ~:1090), `src-tauri/src/transform.rs` (commands next to :213), `src-tauri/src/lib.rs` (collect_commands :740-747), `src/stores/settingsStore.ts` (settingUpdaters :183-191)
@@ -131,7 +131,7 @@ Rules: POST /mcp passes `req.auth.scope` to `buildMcpServer`; with `voice` only 
 - [ ] Step 2: `cd src-tauri && cargo test --lib settings` → FAIL. Step 3: implement. Step 4: PASS (and `cargo build` once to regenerate `src/bindings.ts`).
 - [ ] Step 5: Commit `feat: voice source settings`.
 
-### Task B2: Keychain token store
+### Task 6 (B2): Keychain token store
 
 **Files:**
 - Create: `src-tauri/src/voice_source/secrets.rs`; add `keyring = { version = "3", features = ["apple-native"] }` under `[target.'cfg(target_os = "macos")'.dependencies]`.
@@ -140,7 +140,7 @@ Rules: POST /mcp passes `req.auth.scope` to `buildMcpServer`; with `voice` only 
 - Produces: `struct StoredTokens { access_token: String, refresh_token: Option<String>, expires_at: Option<i64>, client_id: String, token_endpoint: String }` (serde); `fn save_tokens(server_url: &str, t: &StoredTokens) -> Result<(), String>`, `fn load_tokens(server_url: &str) -> Result<Option<StoredTokens>, String>`, `fn delete_tokens(server_url: &str) -> Result<(), String>`. Keychain service `"TalknGo MCP"`, account = server URL. Non-macOS and `cfg(test)`: process-wide in-memory map.
 - [ ] Steps: test `save_load_delete_roundtrip` (in-memory backend) → fail → implement → pass → commit `feat: keychain storage for MCP tokens`.
 
-### Task B3: OAuth client (discovery, DCR, PKCE, loopback)
+### Task 7 (B3): OAuth client (discovery, DCR, PKCE, loopback)
 
 **Files:**
 - Create: `src-tauri/src/voice_source/oauth.rs`; deps: `rand = "0.8"`, `base64 = "0.22"`, `url = "2"` (tokio already present; add features `net`, `io-util`, `time`, `macros` to the main tokio dep).
@@ -159,7 +159,7 @@ Rules: POST /mcp passes `req.auth.scope` to `buildMcpServer`; with `voice` only 
 - [ ] Step 2: FAIL. Step 3: implement. Step 4: `cargo test --lib voice_source` PASS.
 - [ ] Step 5: Commit `feat: OAuth sign-in for MCP servers (PKCE, DCR, loopback)`.
 
-### Task B4: Minimal MCP client and tool pick
+### Task 8 (B4): Minimal MCP client and tool pick
 
 **Files:**
 - Create: `src-tauri/src/voice_source/mcp.rs`
@@ -170,7 +170,7 @@ Rules: POST /mcp passes `req.auth.scope` to `buildMcpServer`; with `voice` only 
 - [ ] Step 1: Failing tests: `parses_sse_response_by_id`; `parses_json_response`; `pick_tools_finds_convention_names`; `pick_tools_none_when_missing`; `parse_words_accepts_object_array_and_lines`; `call_text_error_result_is_err`.
 - [ ] Steps 2-5: FAIL → implement → PASS → commit `feat: minimal MCP client for voice sources`.
 
-### Task B5: Source-aware sync, cache, and word merge
+### Task 9 (B5): Source-aware sync, cache, and word merge
 
 **Files:**
 - Create: `src-tauri/src/voice_source/mod.rs` (owns sync), `src-tauri/src/voice_source/cache.rs`
@@ -190,7 +190,7 @@ Rules: POST /mcp passes `req.auth.scope` to `buildMcpServer`; with `voice` only 
 - [ ] Step 1: Failing tests: `merge_words_app_wins_case_insensitive` (`["Loxone"]` + `["loxone","Touch Pure"]` → `["Loxone","Touch Pure"]`); `guide_path_by_source` (four cases); `oversized_guide_keeps_previous_cache`; `empty_guide_keeps_previous_cache`; `mcp_sync_never_touches_builtin_guide`; `legacy_sync_skipped_when_source_set`.
 - [ ] Steps 2-5: FAIL → implement → `cargo test` (all) PASS → commit `feat: voice source sync with cache and word merge`.
 
-### Task B6: Settings UI
+### Task 10 (B6): Settings UI
 
 **Files:**
 - Modify: `src/components/settings/transform/TransformSettings.tsx`, `src/i18n/locales/*/translation.json` (24 locales), `src/stores/settingsStore.ts`
@@ -206,7 +206,7 @@ Remove the old standalone sync button/legacy controls from view when `voice_sour
 - [ ] Step 3: Run the app (`bun run tauri dev`), headless screenshot of Settings → Transform in each of the three states; compare with the mockup in the main session; fix differences.
 - [ ] Step 4: Commit `feat: voice source picker in Transform settings`.
 
-### Task B7: Docs, end-to-end with Kodiak, release 0.10.0
+### Task 11 (B7): Docs, end-to-end with Kodiak, release 0.10.0
 
 - [ ] Step 1: README (es + en): replace the "voice guide file" step with the three options, and add "Make your MCP server work with TalknGo": tools `get_voice_guide` (text or `{"version","guide"}`) and `get_vocabulary` (`{"words":[…]}`, JSON array, or lines), OAuth with dynamic client registration and loopback redirects, optional scope `voice`.
 - [ ] Step 2: Bump version to `0.10.0` in `package.json`, `src-tauri/tauri.conf.json`, `src-tauri/Cargo.toml`; `bun run tauri build`; install to /Applications (backup previous to `~/TalknGo-old-backup`); reset TCC for `com.grizzlytec.talkngo` and open Accessibility settings.
