@@ -751,41 +751,41 @@ pub struct ClaudeKeyStatus {
     pub last4: Option<String>,
 }
 
-#[cfg(target_os = "macos")]
+#[cfg(any(target_os = "macos", target_os = "windows"))]
 mod key_store {
     use super::{CLAUDE_KEY_ACCOUNT, CLAUDE_KEY_SERVICE};
 
     fn entry() -> Result<keyring::Entry, String> {
         keyring::Entry::new(CLAUDE_KEY_SERVICE, CLAUDE_KEY_ACCOUNT)
-            .map_err(|e| format!("Keychain error: {e}"))
+            .map_err(|e| format!("Secure storage error: {e}"))
     }
 
     pub fn set(key: &str) -> Result<(), String> {
         entry()?
             .set_password(key)
-            .map_err(|e| format!("Could not save to the Keychain: {e}"))
+            .map_err(|e| format!("Could not save to secure storage: {e}"))
     }
 
     pub fn get() -> Result<Option<String>, String> {
         match entry()?.get_password() {
             Ok(v) => Ok(Some(v)),
             Err(keyring::Error::NoEntry) => Ok(None),
-            Err(e) => Err(format!("Could not read the Keychain: {e}")),
+            Err(e) => Err(format!("Could not read secure storage: {e}")),
         }
     }
 
     pub fn remove() -> Result<(), String> {
         match entry()?.delete_credential() {
             Ok(()) | Err(keyring::Error::NoEntry) => Ok(()),
-            Err(e) => Err(format!("Could not delete from the Keychain: {e}")),
+            Err(e) => Err(format!("Could not delete from secure storage: {e}")),
         }
     }
 }
 
-#[cfg(not(target_os = "macos"))]
+#[cfg(not(any(target_os = "macos", target_os = "windows")))]
 mod key_store {
     pub fn set(_key: &str) -> Result<(), String> {
-        Err("The Keychain is only available on macOS".to_string())
+        Err("Secure storage is only available on macOS and Windows".to_string())
     }
     pub fn get() -> Result<Option<String>, String> {
         Ok(None)

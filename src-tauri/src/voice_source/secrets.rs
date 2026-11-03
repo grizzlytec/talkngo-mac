@@ -1,12 +1,13 @@
-//! Keychain storage for MCP access/refresh tokens.
+//! Secure storage for MCP access/refresh tokens.
 //!
-//! On macOS the tokens live in the login keychain (service "TalknGo MCP",
-//! account = server URL) as one JSON item. Elsewhere, and in tests, a
+//! On macOS the tokens live in the login keychain and on Windows in Credential
+//! Manager (service "TalknGo MCP", account = server URL) as one JSON item.
+//! Elsewhere, and in tests, a
 //! process-wide in-memory map stands in so CI on Linux can run.
 
 use serde::{Deserialize, Serialize};
 
-#[cfg_attr(not(target_os = "macos"), allow(dead_code))]
+#[cfg_attr(not(any(target_os = "macos", target_os = "windows")), allow(dead_code))]
 const SERVICE: &str = "TalknGo MCP";
 
 #[derive(Clone, PartialEq, Serialize, Deserialize)]
@@ -30,7 +31,7 @@ impl std::fmt::Debug for StoredTokens {
     }
 }
 
-#[cfg(any(test, not(target_os = "macos")))]
+#[cfg(any(test, not(any(target_os = "macos", target_os = "windows"))))]
 mod backend {
     use once_cell::sync::Lazy;
     use std::collections::HashMap;
@@ -63,32 +64,32 @@ mod backend {
     }
 }
 
-#[cfg(all(target_os = "macos", not(test)))]
+#[cfg(all(any(target_os = "macos", target_os = "windows"), not(test)))]
 mod backend {
     use super::SERVICE;
 
     fn entry(account: &str) -> Result<keyring::Entry, String> {
-        keyring::Entry::new(SERVICE, account).map_err(|e| format!("Keychain error: {e}"))
+        keyring::Entry::new(SERVICE, account).map_err(|e| format!("Secure storage error: {e}"))
     }
 
     pub fn set(account: &str, value: &str) -> Result<(), String> {
         entry(account)?
             .set_password(value)
-            .map_err(|e| format!("Could not save to the Keychain: {e}"))
+            .map_err(|e| format!("Could not save to secure storage: {e}"))
     }
 
     pub fn get(account: &str) -> Result<Option<String>, String> {
         match entry(account)?.get_password() {
             Ok(v) => Ok(Some(v)),
             Err(keyring::Error::NoEntry) => Ok(None),
-            Err(e) => Err(format!("Could not read the Keychain: {e}")),
+            Err(e) => Err(format!("Could not read secure storage: {e}")),
         }
     }
 
     pub fn remove(account: &str) -> Result<(), String> {
         match entry(account)?.delete_credential() {
             Ok(()) | Err(keyring::Error::NoEntry) => Ok(()),
-            Err(e) => Err(format!("Could not delete from the Keychain: {e}")),
+            Err(e) => Err(format!("Could not delete from secure storage: {e}")),
         }
     }
 }

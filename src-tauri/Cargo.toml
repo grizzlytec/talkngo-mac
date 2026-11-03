@@ -170,6 +170,10 @@ objc2-app-kit = "0.3"
 objc2-service-management = "0.3.2"
 keyring = { version = "3", features = ["apple-native"] }
 
+[target.'cfg(target_os = "windows")'.dependencies]
+# Windows Credential Manager for the Claude API key and MCP tokens.
+keyring = { version = "3", features = ["windows-native"] }
+
 [target.'cfg(target_os = "linux")'.dependencies]
 gtk-layer-shell = { version = "0.8", features = ["v0_6"] }
 gtk = "0.18"
