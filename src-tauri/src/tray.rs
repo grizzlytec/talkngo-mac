@@ -67,6 +67,7 @@ struct MenuInputs {
     locale: String,
     update_checks_enabled: bool,
     transform_style: crate::transform::TransformStyle,
+    dictation_claude_cleanup: bool,
 }
 
 /// Complete description of what the tray should look like.
@@ -350,6 +351,7 @@ fn compute_desired(app: &AppHandle, icon_state: TrayIconState) -> TrayDesired {
             locale: settings.app_language,
             update_checks_enabled,
             transform_style: settings.transform_style,
+            dictation_claude_cleanup: settings.dictation_claude_cleanup,
         },
     }
 }
@@ -587,6 +589,15 @@ fn build_menu(app: &AppHandle, inputs: &MenuInputs) -> tauri::Result<(Menu<tauri
             transform_submenu.append(&item)?;
         }
 
+        let claude_cleanup_i = CheckMenuItem::with_id(
+            app,
+            "dictation_claude_cleanup",
+            &strings.claude_cleanup,
+            true,
+            inputs.dictation_claude_cleanup,
+            None::<&str>,
+        )?;
+
         let unload_model_i = MenuItem::with_id(
             app,
             "unload_model",
@@ -605,6 +616,7 @@ fn build_menu(app: &AppHandle, inputs: &MenuInputs) -> tauri::Result<(Menu<tauri
                 &model_submenu,
                 &unload_model_i,
                 &transform_submenu,
+                &claude_cleanup_i,
                 &separator()?,
                 &settings_i,
                 &check_updates_i,
@@ -741,6 +753,7 @@ mod tests {
             locale: "en".to_string(),
             update_checks_enabled: true,
             transform_style: crate::transform::TransformStyle::default(),
+            dictation_claude_cleanup: false,
         }
     }
 

@@ -14,7 +14,8 @@
     "transformFriendlier": "Friendlier",
     "transformClearer": "Clearer",
     "transformShorter": "Shorter",
-    "transformMyVoice": "My voice"
+    "transformMyVoice": "My voice",
+    "claudeCleanup": "Clean up with Claude"
   },
   "sidebar": {
     "general": "일반",

@@ -364,6 +364,21 @@ fn initialize_core_logic(app_handle: &AppHandle) {
                     None => log::warn!("Unknown transform style from tray: {}", style_id),
                 }
             }
+            "dictation_claude_cleanup" => {
+                let app_clone = app.clone();
+                std::thread::spawn(move || {
+                    let mut current = settings::get_settings(&app_clone);
+                    current.dictation_claude_cleanup = !current.dictation_claude_cleanup;
+                    let value = current.dictation_claude_cleanup;
+                    settings::write_settings(&app_clone, current);
+                    tray::update_tray_menu(&app_clone);
+                    // Keeps the Settings toggle in sync (frontend refetches on this event).
+                    let _ = app_clone.emit(
+                        "settings-changed",
+                        serde_json::json!({ "setting": "dictation_claude_cleanup", "value": value }),
+                    );
+                });
+            }
             _ => {}
         })
         .build(app_handle)

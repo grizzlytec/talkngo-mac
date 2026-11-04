@@ -58,3 +58,11 @@ Mockup: `docs/mockups/2026-11-03-clean-dictation.html` (1 setting on, 2 no key, 
 still points to CommandLineTools, so builds need `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer`,
 `SWIFTC=$(xcrun --find swiftc)` and `touch src-tauri/build.rs` (build.rs does not rerun on those env vars).
 Not published to GitHub yet; friends stay on 0.11.0 until Grizzly asks.
+
+## Follow-up (Grizzly 2026-11-03)
+
+- Approved: quick on/off for "Clean up with Claude" in the tray menu (Settings took 5–6 clicks). He wants it
+  off when dictating to Claude Code, on for emails/messages.
+- Proposal (not approved yet): turn the cleanup off automatically when the front app is VS Code / Terminal.
+- "Slow to start listening" was the mic, not this change: log shows "HK 5M CAM" opening in 1205–5750 ms vs
+  "HUAWEI FreeClip" 32–341 ms (`~/Library/Logs/com.grizzlytec.talkngo/handy.log`).

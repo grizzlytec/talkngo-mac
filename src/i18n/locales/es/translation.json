@@ -14,7 +14,8 @@
     "transformFriendlier": "Más amable",
     "transformClearer": "Más claro",
     "transformShorter": "Más corto",
-    "transformMyVoice": "Mi voz"
+    "transformMyVoice": "Mi voz",
+    "claudeCleanup": "Limpiar con Claude"
   },
   "sidebar": {
     "general": "General",
