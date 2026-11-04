@@ -66,3 +66,6 @@ Not published to GitHub yet; friends stay on 0.11.0 until Grizzly asks.
 - Proposal (not approved yet): turn the cleanup off automatically when the front app is VS Code / Terminal.
 - "Slow to start listening" was the mic, not this change: log shows "HK 5M CAM" opening in 1205–5750 ms vs
   "HUAWEI FreeClip" 32–341 ms (`~/Library/Logs/com.grizzlytec.talkngo/handy.log`).
+- Decision (Grizzly 2026-11-03): no "always-on microphone". He almost always uses earbuds; the slow start
+  only happens without them (Mac mini has no built-in mic, so it falls back to the camera mic). Leave as is.
+- Tray toggle shipped in 5b772dd.
