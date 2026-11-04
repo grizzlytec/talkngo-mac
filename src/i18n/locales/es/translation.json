@@ -630,7 +630,8 @@
       "claudeDictationCleanup": {
         "title": "Limpiar con Claude",
         "description": "También quita «este», «o sea», «bueno» cuando son relleno y las ideas que dijiste dos veces. Conserva tus palabras y su orden. Usa internet y tarda cerca de 1 segundo más. ≈ $0.06 por 1,000 dictados.",
-        "noKey": "Primero agrega tu clave de Claude en Transform."
+        "noKey": "Primero agrega tu clave de Claude en Transform.",
+        "shortcutNote": "Solo para tu atajo normal de dictado. El atajo «Dictar y limpiar con Claude» (en General) siempre limpia, aunque esto esté apagado."
       },
       "chineseScript": {
         "title": "Escritura china",

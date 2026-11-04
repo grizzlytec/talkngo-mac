@@ -39,7 +39,11 @@ export const ClaudeDictationCleanup: React.FC<ClaudeDictationCleanupProps> =
           descriptionMode={descriptionMode}
           grouped={grouped}
         />
-        {!hasKey && (
+        {hasKey ? (
+          <p className="px-4 pb-3 text-xs opacity-60">
+            {t("settings.advanced.claudeDictationCleanup.shortcutNote")}
+          </p>
+        ) : (
           <p className="px-4 pb-2 text-sm text-red-600">
             {t("settings.advanced.claudeDictationCleanup.noKey")}
           </p>

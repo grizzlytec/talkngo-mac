@@ -630,7 +630,8 @@
       "claudeDictationCleanup": {
         "title": "Clean up with Claude",
         "description": "Also removes \"este\", \"o sea\", \"bueno\" used as filler, and ideas you said twice. Keeps your words and order. Uses the internet, adds about 1 second. ≈ $0.06 per 1,000 dictations.",
-        "noKey": "Add your Claude key in Transform first."
+        "noKey": "Add your Claude key in Transform first.",
+        "shortcutNote": "Only for your normal dictation shortcut. The \"Transcribe and Clean Up\" shortcut (General) always cleans up, even when this is off."
       },
       "chineseScript": {
         "title": "中国語の表記",
