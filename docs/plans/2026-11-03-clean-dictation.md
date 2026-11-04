@@ -78,3 +78,13 @@ Not published to GitHub yet; friends stay on 0.11.0 until Grizzly asks.
   (default off) and the tray toggle. Grizzly's normal key is a Right Control tap; the new default on macOS
   is Right Option (same tap/hold behavior), editable in Settings like the others.
 - Without a Claude key the clean shortcut pastes the locally cleaned text (same fallback as the setting).
+
+## Where we are (handoff 2026-11-03 19:10)
+- Done: tray toggle "Clean up with Claude" (5b772dd); second shortcut `transcribe_clean` — Right Option on
+  macOS, always cleans (643219d); gray note under the setting explaining it (51068ec). Tests: settings:: 42,
+  dictation_cleanup 3, shortcut:: 19, transcription_coordinator 36 passed; lint/tsc/translations clean.
+  0.12.0 with all of this built with Xcode (FoundationModels linked) and installed on this Mac.
+- In progress: nothing half-done. Grizzly has to re-grant Accessibility/Input Monitoring after the install.
+- Next step: Grizzly tests Right Control (no cleanup) vs Right Option (Claude cleanup); then decide on
+  publishing 0.12.0 via the manual Release workflow (bilingual notes, he publishes the draft).
+- Open questions: publish 0.12.0 now or after testing; Handy-style animated tutorial (which app/instruction).
