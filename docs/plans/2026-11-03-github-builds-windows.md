@@ -35,9 +35,9 @@ only when Grizzly asks. Pushing to main must never start a build.
 ## Pending
 
 - [x] Actions minutes: standard runners (incl. macos-26, windows-latest) are free and unlimited on public repos (docs.github.com, actions billing). Repo is PUBLIC.
-- [ ] Workflows manual-only, Actions on.
-- [ ] Windows key storage.
-- [ ] Release run → draft.
+- [x] Workflows manual-only, Actions on (pushes after that started no run).
+- [x] Windows key storage.
+- [x] Release run 41738723612 → Mac dmg (links FoundationModels → Apple Intelligence real, ad-hoc signed) + Windows setup.exe/msi. Published 2026-11-03 as Latest: https://github.com/grizzlytec/talkngo-mac/releases/tag/v0.11.0 (updater .app.tar.gz removed).
 - [ ] Grizzly: test on a Windows PC, then publish the draft.
 
 ## Decision 2026-11-03 (Grizzly: "Sí")

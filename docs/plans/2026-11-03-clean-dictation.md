@@ -50,4 +50,11 @@ Mockup: `docs/mockups/2026-11-03-clean-dictation.html` (1 setting on, 2 no key, 
 - [x] Implementation + tests: `dictation_cleanup.rs` (new, called at the start of `process_transcription_output` in actions.rs); text.rs Spanish fillers + `collapse_repeated_phrases`. `cargo test --lib dictation_cleanup` 3, `audio_toolkit::text` 51, `settings::` 40 passed; fmt, translations, lint, tsc, prettier clean.
 - [x] Haiku end-to-end, 8 dictation-style cases (es + en, one injected instruction): avg 0.96 s, max 1.10 s; 7/8 fully clean (one kept "Thursday, Thursday at nine"); no meaning change; injected instruction not followed; 3,813 in / 267 out tokens ≈ $0.0005 → ≈ $0.06 / 1,000 dictations. Prompt in the code const (scratchpad/ai-test/cleanup.py).
 - [x] Screenshots `docs/screenshots/2026-11-03-clean-dictation-{1,2}.png` match the mockup. The toggle sits in Settings → Advanced → Transcription (where "Remove filler words" actually lives), description in the (i) tooltip like the other rows.
-- [ ] Commit, push; next release when Grizzly asks
+- [x] Commit, push. Next GitHub release when Grizzly asks.
+
+## Installed on Grizzly's Mac (2026-11-03)
+
+0.12.0 built locally with Xcode 27.2 (Apple Intelligence real: binary links FoundationModels). xcode-select
+still points to CommandLineTools, so builds need `DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer`,
+`SWIFTC=$(xcrun --find swiftc)` and `touch src-tauri/build.rs` (build.rs does not rerun on those env vars).
+Not published to GitHub yet; friends stay on 0.11.0 until Grizzly asks.
