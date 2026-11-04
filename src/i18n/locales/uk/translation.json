@@ -351,6 +351,10 @@
             "name": "Гаряча клавіша скасування",
             "description": "Комбінація клавіш для скасування поточного запису."
           },
+          "transcribe_clean": {
+            "name": "Transcribe and Clean Up",
+            "description": "Converts your speech into text and cleans it up with Claude."
+          },
           "transcribe_with_post_process": {
             "name": "Гаряча клавіша постобробки",
             "description": "Необов'язково: Спеціальна гаряча клавіша, яка завжди застосовує AI-постобробку до вашої транскрипції."

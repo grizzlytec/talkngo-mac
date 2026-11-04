@@ -351,6 +351,10 @@
             "name": "Pintasan Batal",
             "description": "Pintasan keyboard untuk membatalkan perekaman saat ini."
           },
+          "transcribe_clean": {
+            "name": "Transcribe and Clean Up",
+            "description": "Converts your speech into text and cleans it up with Claude."
+          },
           "transcribe_with_post_process": {
             "name": "Pintasan Pascaproses",
             "description": "Opsional: pintasan khusus yang selalu menerapkan pascaproses AI pada transkripsi Anda."

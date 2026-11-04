@@ -351,6 +351,10 @@
             "name": "Бърз клавиш за отказ",
             "description": "Клавишната комбинация за отмяна на текущия запис."
           },
+          "transcribe_clean": {
+            "name": "Transcribe and Clean Up",
+            "description": "Converts your speech into text and cleans it up with Claude."
+          },
           "transcribe_with_post_process": {
             "name": "Бърз клавиш за постобработка",
             "description": "По избор: отделна комбинация, която винаги прилага ИИ постобработка върху транскрипцията."

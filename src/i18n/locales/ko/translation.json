@@ -351,6 +351,10 @@
             "name": "취소 단축키",
             "description": "현재 녹음을 취소하는 키보드 단축키입니다."
           },
+          "transcribe_clean": {
+            "name": "Transcribe and Clean Up",
+            "description": "Converts your speech into text and cleans it up with Claude."
+          },
           "transcribe_with_post_process": {
             "name": "후처리 단축키",
             "description": "선택 사항: 항상 AI 후처리를 적용하는 전용 단축키입니다."

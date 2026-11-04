@@ -351,6 +351,10 @@
             "name": "Горячая клавиша отмены",
             "description": "Сочетание клавиш для отмены текущей записи."
           },
+          "transcribe_clean": {
+            "name": "Transcribe and Clean Up",
+            "description": "Converts your speech into text and cleans it up with Claude."
+          },
           "transcribe_with_post_process": {
             "name": "Горячая клавиша постобработки",
             "description": "Специальное сочетание клавиш для ИИ-постобработки вашей транскрипции."

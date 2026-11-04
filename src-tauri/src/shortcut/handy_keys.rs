@@ -88,7 +88,9 @@ pub struct FrontendKeyEvent {
 
 /// Bindings that use lone-modifier semantics when bound to a single modifier.
 fn is_tap_binding(binding_id: &str) -> bool {
-    binding_id == crate::transform::TRANSFORM_BINDING_ID || binding_id == "transcribe"
+    binding_id == crate::transform::TRANSFORM_BINDING_ID
+        || binding_id == "transcribe"
+        || binding_id == "transcribe_clean"
 }
 
 /// Lone-modifier behavior of one binding.
@@ -101,7 +103,7 @@ enum TapKind {
 
 impl TapKind {
     fn new(binding_id: &str, target: handy_keys::Modifiers) -> Self {
-        if binding_id == "transcribe" {
+        if binding_id == "transcribe" || binding_id == "transcribe_clean" {
             TapKind::Dictation(HoldTapMachine::new(target))
         } else {
             TapKind::Tap(TapDetector::new(target))

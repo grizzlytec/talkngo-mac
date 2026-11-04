@@ -971,6 +971,20 @@ fn ensure_post_process_defaults(settings: &mut AppSettings) -> bool {
     changed
 }
 
+/// Adds any default bindings missing from a stored settings value (bindings
+/// added since the store was written) without touching saved ones.
+fn merge_missing_bindings(settings: &mut AppSettings) -> bool {
+    let mut changed = false;
+    for (key, value) in get_default_settings().bindings {
+        if let std::collections::hash_map::Entry::Vacant(entry) = settings.bindings.entry(key) {
+            debug!("Adding missing binding: {}", entry.key());
+            entry.insert(value);
+            changed = true;
+        }
+    }
+    changed
+}
+
 pub const SETTINGS_STORE_PATH: &str = "settings_store.json";
 
 pub fn get_default_settings() -> AppSettings {
@@ -1012,6 +1026,23 @@ pub fn get_default_settings() -> AppSettings {
                 .to_string(),
             default_binding: default_post_process_shortcut.to_string(),
             current_binding: default_post_process_shortcut.to_string(),
+        },
+    );
+    // Second dictation shortcut: same behavior as "transcribe" but always runs
+    // the Claude cleanup. macOS default is a lone Right Option (hold = push to
+    // talk, double tap = hands-free); elsewhere ctrl+alt+space.
+    #[cfg(target_os = "macos")]
+    let default_clean_shortcut = "option_right";
+    #[cfg(not(target_os = "macos"))]
+    let default_clean_shortcut = "ctrl+alt+space";
+    bindings.insert(
+        "transcribe_clean".to_string(),
+        ShortcutBinding {
+            id: "transcribe_clean".to_string(),
+            name: "Transcribe and Clean Up".to_string(),
+            description: "Converts your speech into text and cleans it up with Claude.".to_string(),
+            default_binding: default_clean_shortcut.to_string(),
+            current_binding: default_clean_shortcut.to_string(),
         },
     );
     bindings.insert(
@@ -1192,13 +1223,8 @@ pub fn get_settings(app: &AppHandle) -> AppSettings {
             updated = true;
         }
 
-        // Merge in any bindings added since this store was written.
-        for (key, value) in get_default_settings().bindings {
-            if let std::collections::hash_map::Entry::Vacant(entry) = settings.bindings.entry(key) {
-                debug!("Adding missing binding: {}", entry.key());
-                entry.insert(value);
-                updated = true;
-            }
+        if merge_missing_bindings(&mut settings) {
+            updated = true;
         }
 
         if updated {
@@ -1611,6 +1637,51 @@ mod tests {
         assert!(crate::shortcut::tap::tap_modifier(&binding.default_binding).is_some());
         assert_eq!(binding.current_binding, binding.default_binding);
         assert!(crate::actions::ACTION_MAP.contains_key(crate::transform::TRANSFORM_BINDING_ID));
+    }
+
+    #[test]
+    fn clean_binding_has_a_parseable_default_and_an_action() {
+        let binding = get_default_settings().bindings["transcribe_clean"].clone();
+        assert!(crate::actions::ACTION_MAP.contains_key("transcribe_clean"));
+        assert!(crate::transcription_coordinator::is_transcribe_binding(
+            "transcribe_clean"
+        ));
+        #[cfg(target_os = "macos")]
+        {
+            assert_eq!(binding.default_binding, "option_right");
+            assert_eq!(
+                crate::shortcut::tap::tap_modifier(&binding.default_binding),
+                Some(handy_keys::Modifiers::OPT_RIGHT)
+            );
+        }
+        #[cfg(not(target_os = "macos"))]
+        assert_eq!(binding.default_binding, "ctrl+alt+space");
+        // No other default binding shares its key.
+        let defaults = get_default_settings().bindings;
+        assert!(defaults
+            .values()
+            .filter(|b| b.id != "transcribe_clean")
+            .all(|b| b.default_binding != binding.default_binding));
+    }
+
+    #[test]
+    fn existing_users_get_the_clean_binding_without_losing_saved_ones() {
+        let mut settings = get_default_settings();
+        settings.bindings.remove("transcribe_clean");
+        settings
+            .bindings
+            .get_mut("transcribe")
+            .unwrap()
+            .current_binding = "f13".into();
+
+        assert!(merge_missing_bindings(&mut settings));
+        assert_eq!(
+            settings.bindings["transcribe_clean"].current_binding,
+            get_default_settings().bindings["transcribe_clean"].current_binding
+        );
+        assert_eq!(settings.bindings["transcribe"].current_binding, "f13");
+        // Idempotent.
+        assert!(!merge_missing_bindings(&mut settings));
     }
 
     #[test]

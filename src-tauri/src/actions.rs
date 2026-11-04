@@ -113,6 +113,8 @@ pub trait ShortcutAction: Send + Sync {
 // Transcribe Action
 struct TranscribeAction {
     post_process: bool,
+    /// Always run the Claude cleanup, whatever `dictation_claude_cleanup` says.
+    force_cleanup: bool,
 }
 
 /// Field name for structured output JSON schema
@@ -411,6 +413,7 @@ pub(crate) async fn process_transcription_output(
     app: &AppHandle,
     transcription: &str,
     post_process: bool,
+    force_cleanup: bool,
 ) -> ProcessedTranscription {
     let settings = get_settings(app);
     let mut final_text = transcription.to_string();
@@ -419,7 +422,8 @@ pub(crate) async fn process_transcription_output(
 
     // Optional Claude cleanup runs right after the local cleanup (already applied
     // to `transcription`); any failure keeps the local text.
-    final_text = crate::dictation_cleanup::cleanup_dictation(&settings, final_text).await;
+    final_text =
+        crate::dictation_cleanup::cleanup_dictation(&settings, final_text, force_cleanup).await;
 
     if post_process {
         if let Some(processed_text) = post_process_transcription(&settings, &final_text).await {
@@ -663,6 +667,7 @@ impl ShortcutAction for TranscribeAction {
 
         let binding_id = binding_id.to_string(); // Clone binding_id for the async task
         let post_process = self.post_process;
+        let force_cleanup = self.force_cleanup;
         let cancel_generation = rm.cancel_generation();
 
         tauri::async_runtime::spawn(async move {
@@ -767,7 +772,12 @@ impl ShortcutAction for TranscribeAction {
                                 }
                             }
                             let Some(processed) = complete_unless_cancelled(
-                                process_transcription_output(&ah, &transcription, post_process),
+                                process_transcription_output(
+                                    &ah,
+                                    &transcription,
+                                    post_process,
+                                    force_cleanup,
+                                ),
                                 || rm.was_cancelled_since(cancel_generation),
                             )
                             .await
@@ -985,11 +995,22 @@ pub static ACTION_MAP: Lazy<HashMap<String, Arc<dyn ShortcutAction>>> = Lazy::ne
         "transcribe".to_string(),
         Arc::new(TranscribeAction {
             post_process: false,
+            force_cleanup: false,
+        }) as Arc<dyn ShortcutAction>,
+    );
+    map.insert(
+        "transcribe_clean".to_string(),
+        Arc::new(TranscribeAction {
+            post_process: false,
+            force_cleanup: true,
         }) as Arc<dyn ShortcutAction>,
     );
     map.insert(
         "transcribe_with_post_process".to_string(),
-        Arc::new(TranscribeAction { post_process: true }) as Arc<dyn ShortcutAction>,
+        Arc::new(TranscribeAction {
+            post_process: true,
+            force_cleanup: false,
+        }) as Arc<dyn ShortcutAction>,
     );
     map.insert(
         "cancel".to_string(),
