@@ -69,3 +69,12 @@ Not published to GitHub yet; friends stay on 0.11.0 until Grizzly asks.
 - Decision (Grizzly 2026-11-03): no "always-on microphone". He almost always uses earbuds; the slow start
   only happens without them (Mac mini has no built-in mic, so it falls back to the camera mic). Leave as is.
 - Tray toggle shipped in 5b772dd.
+
+## Second dictation shortcut (approved by Grizzly 2026-11-03)
+
+- "Sí, esa idea me gusta más, que uno sea para sin limpieza y otro sea con limpieza."
+- New binding `transcribe_clean` ("Transcribe and clean up with Claude"): always runs the Claude cleanup,
+  whatever the setting says. The normal `transcribe` binding keeps following `dictation_claude_cleanup`
+  (default off) and the tray toggle. Grizzly's normal key is a Right Control tap; the new default on macOS
+  is Right Option (same tap/hold behavior), editable in Settings like the others.
+- Without a Claude key the clean shortcut pastes the locally cleaned text (same fallback as the setting).
